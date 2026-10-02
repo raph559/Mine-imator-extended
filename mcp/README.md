@@ -37,3 +37,5 @@ One JSON object per line: `{"id": 1, "cmd": "get_status", "args": {}}` returns `
 - Exported images carry the "Created with Mine-imator" watermark (no tool option yet).
 - `screenshot` includes the selection gizmos of the selected object; `export_image` does not.
 - Camera values and `sky_time` are rounded to 3 decimals.
+- `project_open` checks the file format first and refuses corrupt or too-new files, but a project whose model resources are missing can still make the app show an error dialog; until it is closed other commands answer `busy_modal`.
+- While an export is running only `get_status` is answered; other commands wait for it. An export that takes longer than 10 minutes (`MINEIMATOR_BRIDGE_PENDING_TIMEOUT_MS` overrides) is answered with `timeout` and keeps running.

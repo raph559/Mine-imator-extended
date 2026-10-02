@@ -157,3 +157,19 @@ function bridge_real(val)
 {
 	return round(val * 1000) / 1000
 }
+
+/// bridge_is_hex_color(value)
+/// @arg value
+/// @desc True for a string like #RRGGBB.
+
+function bridge_is_hex_color(val)
+{
+	if (!is_string(val) || string_length(val) != 7 || string_char_at(val, 1) != "#")
+		return false
+	
+	for (var i = 2; i <= 7; i++)
+		if (string_pos(string_char_at(val, i), "0123456789abcdefABCDEF") = 0)
+			return false
+	
+	return true
+}

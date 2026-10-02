@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { existsSync } from "node:fs";
+import { existsSync, writeFileSync } from "node:fs";
 import { after, before, test } from "node:test";
 import { startApp, tmpDir } from "./harness.mjs";
 
@@ -40,4 +40,24 @@ test("project_save succeeds and project_open reopens the file", async () => {
 test("project_open reports not_found for a missing file and bad_args for other file types", async () => {
   await assert.rejects(app.client.call("project_open", { path: `${folder}/missing.miproject` }), (err) => err.code === "not_found");
   await assert.rejects(app.client.call("project_open", { path: `${folder}/thumbnail.png` }), (err) => err.code === "bad_args" || err.code === "not_found");
+});
+
+test("project_open refuses unloadable project files without opening a dialog", async () => {
+  const cases = {
+    "garbage.miproject": "this is not json",
+    "no-format.miproject": "{}",
+    "too-new.miproject": '{"format": 9999}',
+    "too-old.miproject": '{"format": 3}',
+  };
+  for (const [name, content] of Object.entries(cases)) {
+    writeFileSync(`${folder}/${name}`, content);
+    await assert.rejects(
+      app.client.call("project_open", { path: `${folder}/${name}` }, { timeoutMs: 8000 }),
+      (err) => err.code === "load_failed",
+      name,
+    );
+  }
+  const status = await app.client.call("get_status", {}, { timeoutMs: 8000 });
+  assert.equal(status.window_state, "");
+  assert.equal(status.project_name, "My test");
 });

@@ -68,6 +68,11 @@ namespace CppProject
 
 	bool Bridge::Start(quint16 port)
 	{
+		bool timeoutOk = false;
+		int timeoutMs = qEnvironmentVariableIntValue("MINEIMATOR_BRIDGE_PENDING_TIMEOUT_MS", &timeoutOk);
+		if (timeoutOk && timeoutMs > 0)
+			pendingTimeoutMs = timeoutMs;
+
 		connect(&server, &QTcpServer::newConnection, this, [this]()
 		{
 			while (QTcpSocket* socket = server.nextPendingConnection())
@@ -162,20 +167,32 @@ namespace CppProject
 			if (waiting)
 			{
 				IntType mapId = VarType(bridge_pending_poll(scope)).ToInt();
-				if (mapId < 0)
-					return;
-
-				Reply(waitingRequest.socket, waitingRequest.id, EncodeMap(mapId));
-				ds_map_destroy(mapId);
-				waiting = false;
+				if (mapId >= 0)
+				{
+					Reply(waitingRequest.socket, waitingRequest.id, EncodeMap(mapId));
+					ds_map_destroy(mapId);
+					waiting = false;
+				}
+				else if (waitingTimer.hasExpired(pendingTimeoutMs))
+				{
+					ReplyError(waitingRequest.socket, waitingRequest.id, "timeout", "The command did not finish in time. It may still be running in Mine-imator");
+					waiting = false;
+				}
 			}
 
+			// While a command is pending only get_status is answered, the rest waits in order
+			QQueue<Request> deferred;
 			Timer budget;
-			while (!queue.isEmpty() && !waiting && budget.ElapsedMs() < stepBudgetMs)
+			while (!queue.isEmpty() && budget.ElapsedMs() < stepBudgetMs)
 			{
 				Request request = queue.dequeue();
 				if (!request.socket)
 					continue;
+				if (waiting && request.cmd != "get_status")
+				{
+					deferred.enqueue(request);
+					continue;
+				}
 
 				try
 				{
@@ -187,6 +204,7 @@ namespace CppProject
 					{
 						waiting = true;
 						waitingRequest = request;
+						waitingTimer.start();
 					}
 					else
 						Reply(request.socket, request.id, body);
@@ -197,6 +215,9 @@ namespace CppProject
 					ReplyError(request.socket, request.id, "internal_error", ex);
 				}
 			}
+
+			while (!deferred.isEmpty())
+				queue.prepend(deferred.takeLast());
 		}
 		catch (const QString& ex)
 		{

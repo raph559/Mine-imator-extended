@@ -15,11 +15,11 @@ export function tmpDir() {
 }
 
 /** Starts the custom build with the bridge on TEST_PORT and waits until assets are loaded. */
-export async function startApp() {
+export async function startApp({ env = {} } = {}) {
   const child = spawn(exe, ["--bridge"], {
     cwd: path.dirname(exe),
     stdio: "ignore",
-    env: { ...process.env, MINEIMATOR_BRIDGE_PORT: String(TEST_PORT) },
+    env: { ...process.env, MINEIMATOR_BRIDGE_PORT: String(TEST_PORT), ...env },
   });
   const client = new BridgeClient({ port: TEST_PORT });
   const deadline = Date.now() + Number(process.env.MI_READY_TIMEOUT_MS ?? 120000);

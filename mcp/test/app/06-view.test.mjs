@@ -64,14 +64,15 @@ test("export_image renders the project resolution and returns when the file exis
   assert.equal((await call("get_status")).window_state, "");
 });
 
-test("commands sent during an export are answered after it, in order", async () => {
+test("get_status answers during an export, other commands wait for it", async () => {
   const path = `${out}/render2.png`;
-  const [exported, status] = await Promise.all([
-    call("export_image", { path, high_quality: false }, { timeoutMs: 120000 }),
-    call("get_status", {}, { timeoutMs: 120000 }),
-  ]);
-  assert.equal(exported.path, path);
-  assert.equal(status.window_state, "");
+  const exported = call("export_image", { path, high_quality: false }, { timeoutMs: 120000 });
+  const status = await call("get_status", {}, { timeoutMs: 120000 });
+  const scene = call("get_scene", {}, { timeoutMs: 120000 });
+  assert.equal(status.window_state, "export_image");
+  assert.equal((await exported).path, path);
+  assert.ok(Array.isArray((await scene).objects));
+  assert.equal((await call("get_status")).window_state, "");
 });
 
 test("set_background changes and reports background settings", async () => {
@@ -81,5 +82,7 @@ test("set_background changes and reports background settings", async () => {
   assert.equal(bg.sky_time, 90);
   await assert.rejects(call("set_background", { biome: "no_such_biome" }), (err) => err.code === "not_found");
   await assert.rejects(call("set_background", { ground_show: "yes" }), (err) => err.code === "bad_args");
+  await assert.rejects(call("set_background", { sky_color: "#zzzzzz" }), (err) => err.code === "bad_args");
+  assert.equal((await call("set_background", {})).sky_color, "#102030");
   assert.equal((await call("set_background", {})).ground_show, false);
 });

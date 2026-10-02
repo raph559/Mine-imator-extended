@@ -49,6 +49,9 @@ test("set_values applies nothing when any name or type is wrong", async () => {
     { pos_x: "sixteen" },
     { pos_x: 1, transition: "not-an-easing" },
     { rgb_mul: 5 },
+    { rgb_mul: "#zzzzzz" },
+    { rgb_mul: "#12345g" },
+    { rgb_mul: "FF8000x" },
     {},
   ];
   for (const values of bad)

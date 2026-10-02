@@ -206,7 +206,7 @@ function bridge_cmd_set_background(args)
 		return bridge_error("bad_args", "sky_time must be a number")
 	if (ds_map_exists(args, "ground_show") && !is_bool(args[?"ground_show"]))
 		return bridge_error("bad_args", "ground_show must be true or false")
-	if (ds_map_exists(args, "sky_color") && (!is_string(args[?"sky_color"]) || string_length(args[?"sky_color"]) != 7 || string_char_at(args[?"sky_color"], 1) != "#"))
+	if (ds_map_exists(args, "sky_color") && !bridge_is_hex_color(args[?"sky_color"]))
 		return bridge_error("bad_args", "sky_color must be a color like #RRGGBB")
 	if (ds_map_exists(args, "biome"))
 	{

@@ -3,6 +3,7 @@
 #include "Common.hpp"
 
 #include <QJsonObject>
+#include <QElapsedTimer>
 #include <QJsonValue>
 #include <QPointer>
 #include <QQueue>
@@ -45,5 +46,7 @@ namespace CppProject
 		// A command that finishes over several steps (e.g. an export)
 		BoolType waiting = false;
 		Request waitingRequest;
+		QElapsedTimer waitingTimer;
+		qint64 pendingTimeoutMs = 10 * 60 * 1000; // MINEIMATOR_BRIDGE_PENDING_TIMEOUT_MS overrides
 	};
 }

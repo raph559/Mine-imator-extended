@@ -43,7 +43,7 @@ function bridge_cmd_project_new(args)
 
 function bridge_cmd_project_open(args)
 {
-	var fn, prevstate;
+	var fn, prevstate, map;
 	if (!is_string(bridge_arg(args, "path", "")))
 		return bridge_error("bad_args", "path must be a string")
 	
@@ -58,6 +58,17 @@ function bridge_cmd_project_open(args)
 	if (project_changed && !bridge_arg(args, "discard", false))
 		return bridge_error("unsaved_changes", "The open project has unsaved changes. Save it first or pass discard: true")
 
+	// The same checks as project_load_start, which shows a message box instead of failing
+	map = json_load(fn)
+	if (!ds_map_valid(map))
+		return bridge_error("load_failed", fn + " is not a Mine-imator project file")
+	if (!is_real(map[?"format"]) || map[?"format"] > project_format || map[?"format"] < e_project.FORMAT_110_PRE_1)
+	{
+		ds_map_destroy(map)
+		return bridge_error("load_failed", fn + " has a missing, too old or too new project format")
+	}
+	ds_map_destroy(map)
+	
 	if (popup != null)
 		popup_close()
 	prevstate = window_state

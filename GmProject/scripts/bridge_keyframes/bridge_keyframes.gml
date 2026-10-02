@@ -64,7 +64,7 @@ function bridge_cmd_set_values(args)
 			return bridge_error("bad_args", string(key) + " refers to a resource and cannot be set through the bridge")
 		else if (tl_value_is_color(vid))
 		{
-			if (!is_string(val) || string_length(val) != 7 || string_char_at(val, 1) != "#")
+			if (!bridge_is_hex_color(val))
 				return bridge_error("bad_args", string(key) + " must be a color like #RRGGBB")
 			val = hex_to_color(val)
 		}

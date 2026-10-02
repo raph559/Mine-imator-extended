@@ -505,6 +505,17 @@
 			"forums": "Visit the forums...",
 			"upgrade": "Upgrade"
 		},
+		"mcp": "MCP",
+		"mcp/": {
+			"running": "Running on port %1",
+			"stopped": "Stopped",
+			"failed": "Could not open port %1",
+			"client": "%1 client connected",
+			"clients": "%1 clients connected",
+			"start": "Start",
+			"stop": "Stop",
+			"autostart": "Start automatically with Mine-imator"
+		},
 		"backup": "Backing up...",
 		"simplemode": "Simple mode enabled"
 	},

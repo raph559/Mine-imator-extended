@@ -23,6 +23,7 @@ function settings_startup()
 	setting_backup_time = 3
 	setting_backup_amount = 5
 	setting_spawn_cameras = true
+	setting_bridge_autostart = false
 	setting_unlimited_values = false
 	
 	setting_watermark_custom = false
@@ -148,6 +149,10 @@ function settings_startup()
 	setting_wind_enable = true
 	
 	settings_load()
+	
+	if (setting_bridge_autostart)
+		bridge_start()
+	
 	languages_load()
 	interface_update_instant()
 }

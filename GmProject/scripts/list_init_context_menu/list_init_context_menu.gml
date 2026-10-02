@@ -372,6 +372,30 @@ function list_init_context_menu(name)
 			break
 		}
 		
+		// MCP menu: automation bridge state and control
+		case "toolbarmcp":
+		{
+			if (bridge_is_running())
+			{
+				list_item_add(text_get("toolbarmcprunning", string(bridge_get_port())), null, "", null, icons.TICK, null, null, false, false)
+				list_item_add(text_get(bridge_get_clients() = 1 ? "toolbarmcpclient" : "toolbarmcpclients", string(bridge_get_clients())), null, "", null, icons.INFO, null, null, true, false)
+				list_item_add(text_get("toolbarmcpstop"), null, "", null, icons.CLOSE, null, action_bridge_toggle)
+			}
+			else
+			{
+				if (bridge_has_failed())
+					list_item_add(text_get("toolbarmcpfailed", string(bridge_get_port())), null, "", null, icons.WARNING_TRIANGLE, null, null, true, false)
+				else
+					list_item_add(text_get("toolbarmcpstopped"), null, "", null, icons.INFO, null, null, true, false)
+				list_item_add(text_get("toolbarmcpstart"), null, "", null, icons.TICK, null, action_bridge_toggle)
+			}
+			
+			list_item_add(text_get("toolbarmcpautostart"), null, "", null, icons.CLOCK, null, action_setting_bridge_autostart)
+			list_item_last.toggled = setting_bridge_autostart
+			
+			break
+		}
+		
 		// Keybind
 		case "keybind":
 		{

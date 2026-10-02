@@ -72,6 +72,7 @@ function settings_load()
 			setting_backup = value_get_real(programmap[?"backup"], setting_backup)
 			setting_backup_time = value_get_real(programmap[?"backup_time"], setting_backup_time)
 			setting_backup_amount = value_get_real(programmap[?"backup_amount"], setting_backup_amount)
+			setting_bridge_autostart = value_get_real(programmap[?"bridge_autostart"], setting_bridge_autostart)
 			setting_spawn_cameras = value_get_real(programmap[?"spawn_cameras"], setting_spawn_cameras)
 			setting_unlimited_values = value_get_real(programmap[?"unlimited_values"], setting_unlimited_values)
 			

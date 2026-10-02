@@ -16,7 +16,7 @@ export const tools = [
   {
     name: "get_status",
     cmd: "get_status",
-    description: "Report what Mine-imator is doing: version, open project, unsaved changes, current frame, playback, object count, undo steps. window_state is \"startup\" on the home screen and \"\" when a project is open.",
+    description: "Report what Mine-imator is doing: version, open project, unsaved changes, current frame, playback, object count, undo steps, and how many clients are connected to the bridge. window_state is \"startup\" on the home screen and \"\" when a project is open.",
     shape: {},
   },
   {
@@ -115,7 +115,7 @@ export const tools = [
   {
     name: "set_values",
     cmd: "set_values",
-    description: "Set values of one object at a frame, creating a keyframe there or editing the existing one. One undo step. Value names are lower case: pos_x pos_y pos_z, rot_x rot_y rot_z, sca_x sca_y sca_z, bend_angle_x, alpha, rgb_mul, cam_fov, light_strength and so on (get_object shows the names in use). Colours are \"#RRGGBB\". Set transition (linear, instant, easeinquad, easeoutquad, easeinoutquad, easeinoutcubic, easeoutbounce, ...) to choose the easing from this keyframe to the next. Z is up; 16 units are one block. Rotation is in degrees. For cameras, rot_z is the heading: 0 looks along +Y, 90 along +X, 180 along -Y (clockwise seen from above), and positive rot_x pitches down; angles are interpolated numerically, so use -22 rather than 338 to turn the short way. A new character faces -Y.",
+    description: "Set values of one object at a frame, creating a keyframe there or editing the existing one. One undo step. Value names are lower case: pos_x pos_y pos_z, rot_x rot_y rot_z, sca_x sca_y sca_z, bend_angle_x, alpha, rgb_mul, cam_fov, light_strength and so on (get_object shows the names in use). Colours are \"#RRGGBB\". Set transition (linear, instant, easeinquad, easeoutquad, easeinoutquad, easeinoutcubic, easeoutbounce, ...) to choose the easing from this keyframe to the next. Z is up; 16 units are one block. Rotation is in degrees. For cameras, rot_z is the heading: 0 looks along +Y, 90 along +X, 180 along -Y, and positive rot_x pitches down; a camera looking along +X has +Y on its right. Angles are interpolated numerically, so use -22 rather than 338 to turn the short way. A new character faces +Y. On a character, body or folder, positive rot_x tips the top forward (a front flip is rot_x 0 to 360); on a leg or arm, negative rot_x lifts it forward and positive bend_angle_x bends the knee. Rotation pivots at the object's origin (a character's feet), so to spin a character around its middle, parent it to a folder placed at the pivot and rotate the folder.",
     shape: {
       id,
       frame: frame.optional().describe("Frame to keyframe at. Default: the current frame"),

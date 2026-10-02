@@ -61,6 +61,7 @@ function settings_save()
 		json_save_var("backup_time", setting_backup_time)
 		json_save_var("backup_amount", setting_backup_amount)
 		json_save_var_bool("spawn_cameras", setting_spawn_cameras)
+		json_save_var_bool("bridge_autostart", setting_bridge_autostart)
 		json_save_var_bool("unlimited_values", setting_unlimited_values)
 		json_save_var_bool("scenery_remove_edges", setting_scenery_remove_edges)
 		

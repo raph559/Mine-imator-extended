@@ -44,6 +44,13 @@ function toolbar_draw()
 	toolbar_draw_button("toolbarhelp", dx, dy, capwid)
 	dx += capwid + padding
 	
+	// Automation bridge, with a dot while it is running
+	capwid = string_width(text_get("toolbarmcp")) + 16 + (bridge_is_running() ? 10 : 0)
+	toolbar_draw_button("toolbarmcp", dx, dy, capwid)
+	if (bridge_is_running())
+		draw_circle_ext(dx + capwid - 9, dy + 14, 3, false, 12, c_success, 1)
+	dx += capwid + padding
+	
 	dx += 8
 	draw_label(text_get("toolbarbackup"), dx, dy + 22, fa_left, fa_bottom, c_text_secondary, a_text_secondary * clamp(backup_text_ani, 0, 1), font_value)
 	

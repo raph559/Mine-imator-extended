@@ -66,34 +66,71 @@ namespace CppProject
 		return obj;
 	}
 
-	bool Bridge::Start(quint16 port)
+	Bridge::Bridge()
 	{
-		bool timeoutOk = false;
-		int timeoutMs = qEnvironmentVariableIntValue("MINEIMATOR_BRIDGE_PENDING_TIMEOUT_MS", &timeoutOk);
-		if (timeoutOk && timeoutMs > 0)
-			pendingTimeoutMs = timeoutMs;
+		bool ok = false;
+		int value = qEnvironmentVariableIntValue("MINEIMATOR_BRIDGE_PORT", &ok);
+		if (ok && value > 0 && value < 65536)
+			port = value;
+
+		value = qEnvironmentVariableIntValue("MINEIMATOR_BRIDGE_PENDING_TIMEOUT_MS", &ok);
+		if (ok && value > 0)
+			pendingTimeoutMs = value;
 
 		connect(&server, &QTcpServer::newConnection, this, [this]()
 		{
 			while (QTcpSocket* socket = server.nextPendingConnection())
 			{
+				sockets.insert(socket);
 				connect(socket, &QTcpSocket::readyRead, this, [this, socket]() { ReadSocket(socket); });
 				connect(socket, &QTcpSocket::disconnected, this, [this, socket]()
 				{
+					sockets.remove(socket);
 					buffers.remove(socket);
 					socket->deleteLater();
 				});
 			}
 		});
+	}
+
+	bool Bridge::Start()
+	{
+		if (listening)
+			return true;
 
 		if (!server.listen(QHostAddress::LocalHost, port))
 		{
 			WARNING("Bridge could not listen on port " + NumStr(port) + ": " + server.errorString());
+			failed = true;
+			notices.append({ "Automation bridge could not open port " + NumStr(port), true });
 			return false;
 		}
 
 		DEBUG("Bridge listening on 127.0.0.1:" + NumStr(port));
+		listening = true;
+		failed = false;
+		notices.append({ "Automation bridge started on port " + NumStr(port), false });
 		return true;
+	}
+
+	void Bridge::Stop()
+	{
+		if (!listening)
+			return;
+
+		server.close();
+		listening = false;
+
+		// abort() emits disconnected, which edits the set
+		const QList<QTcpSocket*> open = sockets.values();
+		for (QTcpSocket* socket : open)
+			socket->abort();
+
+		queue.clear();
+		waiting = false;
+
+		DEBUG("Bridge stopped");
+		notices.append({ "Automation bridge stopped", false });
 	}
 
 	void Bridge::ReadSocket(QTcpSocket* socket)
@@ -162,6 +199,14 @@ namespace CppProject
 
 		ScopeAny scope(global::_app->id);
 
+		// Announce bridge events with the app's own toasts, once its interface is up
+		if (!notices.isEmpty() && !(global::_app->window_state == "load_assets"))
+		{
+			for (const Notice& notice : notices)
+				toast_new(scope, notice.warning ? e_toast_WARNING : e_toast_INFO, StringType(notice.text));
+			notices.clear();
+		}
+
 		try
 		{
 			if (waiting)
@@ -199,6 +244,14 @@ namespace CppProject
 					IntType mapId = VarType(bridge_dispatch(scope, StringType(request.cmd), StringType(request.argsJson))).ToInt();
 					QJsonObject body = EncodeMap(mapId);
 					ds_map_destroy(mapId);
+
+					// The connection count is only known on this side
+					if (request.cmd == "get_status" && body.value("result").isObject())
+					{
+						QJsonObject result = body.value("result").toObject();
+						result["clients"] = ClientCount();
+						body["result"] = result;
+					}
 
 					if (body.value("pending").toBool())
 					{

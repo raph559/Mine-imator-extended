@@ -8,7 +8,13 @@ Controls a running Mine-imator through a local socket built into this fork.
 2. `cd mcp && npm install`
 3. Start an MCP client in this repo; `.mcp.json` registers the `mineimator` server. Call `launch_app` first, or start `install/Mine-imator/Mine-imator.exe --bridge` yourself.
 
-The socket listens on `127.0.0.1:41234` and only when the app is started with `--bridge` (or `MINEIMATOR_BRIDGE_PORT` is set). A normal launch opens nothing. In bridge mode the app uses its own temp folder (`%APPDATA%/Mine-imator/Bridge`), so it can run next to an official install.
+The bridge listens on `127.0.0.1:41234` and is closed until you ask for it, in one of three ways:
+
+- the **MCP** menu in the app's toolbar (next to Help): it shows whether the bridge is running, the port and how many clients are connected, and has Start / Stop;
+- the **Start automatically with Mine-imator** tick box in that menu;
+- the `--bridge` launch flag, which is what `launch_app` uses.
+
+A small dot on the MCP button shows that it is running. Toasts announce when it starts, stops, or cannot open its port. This build always uses its own temp folder (`%APPDATA%/Mine-imator/Bridge`), so it can run next to an official install.
 
 ## Tools
 
@@ -16,17 +22,17 @@ The socket listens on `127.0.0.1:41234` and only when the app is started with `-
 
 Every change goes through the app's own actions, so it shows up live and Ctrl+Z undoes it.
 
-Conventions worth knowing: Z is up and 16 units are one block. A new character faces -Y. For camera objects, `rot_z` is the heading (0 looks along +Y, 90 along +X, clockwise seen from above) and positive `rot_x` pitches down.
+Conventions worth knowing: Z is up and 16 units are one block. A new character faces +Y. For camera objects, `rot_z` is the heading (0 looks along +Y, 90 along +X; a camera looking along +X has +Y on its right) and positive `rot_x` pitches down. On a character, body or folder, positive `rot_x` tips the top forward; on a leg or arm, negative `rot_x` lifts it forward and positive `bend_angle_x` bends the knee. Rotation pivots at the object's origin (a character's feet): to spin a character around its middle, parent it to a folder at the pivot and rotate the folder.
 
 ## Environment
 
-- `MINEIMATOR_BRIDGE_PORT`: port for both the app and the server. Default 41234.
+- `MINEIMATOR_BRIDGE_PORT`: port for both the app and the server. Default 41234. Setting it does not start the bridge.
 - `MINEIMATOR_EXE`: path of the custom build. Default `install/Mine-imator/Mine-imator.exe`.
 
 ## Tests
 
 - `npm test`: unit tests, no app needed.
-- `npm run test:app`: integration tests. They start the custom build on port 41235 and open its window. Files run one at a time; run them with `npm run test:app`, not with several files passed to `node --test`.
+- `npm run test:app`: integration tests against the real app, on port 41235. One instance is started and shared by every file in `test/app`; the files in `test/app/isolated` then start their own, because they test launch conditions. A full run opens the app three times. Test projects are created under `%TEMP%/mi-bridge-tests` and deleted when the run ends, and the app's recent-project list and settings are put back as they were. If a run is killed before it can clean up, the next run does it first. A single file can also be run on its own (`node --test test/app/04-objects.test.mjs`) and then starts its own instance.
 
 ## Protocol
 

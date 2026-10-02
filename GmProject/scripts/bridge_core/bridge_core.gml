@@ -40,6 +40,8 @@ function bridge_dispatch_command(cmd, args)
 	switch (cmd)
 	{
 		case "project_save": return bridge_cmd_project_save(args)
+		case "get_scene": return bridge_cmd_get_scene(args)
+		case "get_object": return bridge_cmd_get_object(args)
 	}
 
 	return bridge_error("unknown_command", "Unknown command " + cmd)

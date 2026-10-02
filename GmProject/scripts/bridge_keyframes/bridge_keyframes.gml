@@ -238,7 +238,7 @@ function bridge_cmd_move_keyframes(args)
 	if (tl = null)
 		return bridge_error("not_found", "No object with id " + string(bridge_arg(args, "id", "")))
 
-	if (!is_real(bridge_arg(args, "from", null)) || !is_real(bridge_arg(args, "to", null)) || bridge_arg(args, "from", 0) < 0 || bridge_arg(args, "to", 0) < 0)
+	if (!bridge_is_frame(args, "from") || !bridge_is_frame(args, "to"))
 		return bridge_error("bad_args", "from and to must be frame numbers of 0 or more")
 	fromframe = round(bridge_arg(args, "from", 0))
 	toframe = round(bridge_arg(args, "to", 0))

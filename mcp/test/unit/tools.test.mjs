@@ -18,7 +18,8 @@ test("every bridge command has a tool", () => {
   const commands = ["get_status", "project_new", "project_open", "project_save", "get_scene", "get_object",
     "create_object", "remove_object", "rename_object", "set_parent", "select", "set_object_settings", "list_names", "undo", "redo",
     "set_frame", "set_values", "set_keyframes", "remove_keyframes", "move_keyframes",
-    "set_work_camera", "play", "stop", "screenshot", "export_image", "export_movie", "set_background", "get_project_settings", "set_project_settings"];
+    "set_work_camera", "play", "stop", "screenshot", "export_image", "export_movie", "set_background", "get_project_settings", "set_project_settings",
+    "duplicate_object", "copy_keyframes", "set_view_camera", "set_marker", "remove_marker", "set_loop"];
   assert.deepEqual(tools.map((t) => t.cmd).sort(), commands.sort());
 });
 
@@ -60,6 +61,15 @@ test("input shapes reject bad input and accept good input", () => {
   assert.ok(project.safeParse({ settings: { tempo: 30, video_width: 1920, video_height: 1080 } }).success);
   assert.ok(!project.safeParse({ settings: { tempo: 0 } }).success);
   assert.ok(!project.safeParse({ settings: { fps: 30 } }).success);
+  const copy = z.object(tool("copy_keyframes").shape);
+  assert.ok(copy.safeParse({ id: "a", frame: 0, end_frame: 10, to_frame: 20, to_id: "b" }).success);
+  assert.ok(!copy.safeParse({ id: "a", frame: 0 }).success);
+  const marker = z.object(tool("set_marker").shape);
+  assert.ok(marker.safeParse({ frame: 4, name: "Jump", color: "forest_green" }).success);
+  assert.ok(!marker.safeParse({ frame: 4, color: "brown" }).success);
+  const loop = z.object(tool("set_loop").shape);
+  assert.ok(loop.safeParse({ start: 0, end: 24, repeat: "seamless" }).success);
+  assert.ok(!loop.safeParse({ repeat: "always" }).success);
   const background = z.object(tool("set_background").shape);
   assert.ok(background.safeParse({ fog_show: false, sky_color: "#102030", sky_moon_phase: 3 }).success);
   assert.ok(!background.safeParse({ sky_color: "blue" }).success);

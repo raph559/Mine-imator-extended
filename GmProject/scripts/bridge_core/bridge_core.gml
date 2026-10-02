@@ -63,6 +63,12 @@ function bridge_dispatch_command(cmd, args)
 		case "set_background": return bridge_cmd_set_background(args)
 		case "get_project_settings": return bridge_cmd_get_project_settings(args)
 		case "set_project_settings": return bridge_cmd_set_project_settings(args)
+		case "duplicate_object": return bridge_cmd_duplicate_object(args)
+		case "copy_keyframes": return bridge_cmd_copy_keyframes(args)
+		case "set_view_camera": return bridge_cmd_set_view_camera(args)
+		case "set_marker": return bridge_cmd_set_marker(args)
+		case "remove_marker": return bridge_cmd_remove_marker(args)
+		case "set_loop": return bridge_cmd_set_loop(args)
 		case "undo": return bridge_cmd_undo(args)
 		case "redo": return bridge_cmd_redo(args)
 	}
@@ -111,6 +117,19 @@ function bridge_arg(args, name, def)
 	return args[?name]
 }
 
+/// bridge_is_frame(args, name)
+/// @arg args
+/// @arg name
+/// @desc Whether the argument is given and is a frame number of 0 or more.
+
+function bridge_is_frame(args, name)
+{
+	if (!ds_map_exists(args, name) || !is_real(args[?name]))
+		return false
+
+	return (args[?name] >= 0)
+}
+
 /// bridge_find_tl(saveid)
 /// @arg saveid
 /// @desc Returns the timeline with the given save ID, or null.
@@ -151,6 +170,7 @@ function bridge_cmd_get_status(args)
 	result[?"object_count"] = instance_number(obj_timeline)
 	result[?"undo_steps"] = history_amount - history_pos
 	result[?"redo_steps"] = history_pos
+	result[?"view_camera"] = bridge_view_camera_name()
 	
 	// Progress of a running movie export
 	if (window_state = "export_movie")

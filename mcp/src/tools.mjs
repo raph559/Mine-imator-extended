@@ -50,7 +50,7 @@ export const tools = [
   {
     name: "get_scene",
     cmd: "get_scene",
-    description: "List every object in the project with its id, name, type, parent, selection and keyframe frames. A character's limbs are separate objects of type bodypart whose part_of is the character's id; pose a limb by setting values on that object.",
+    description: "List every object in the project with its id, name, type, parent, selection and keyframe frames, and the timeline markers. A character's limbs are separate objects of type bodypart whose part_of is the character's id; pose a limb by setting values on that object.",
     shape: {},
   },
   {
@@ -158,7 +158,7 @@ export const tools = [
   {
     name: "set_values",
     cmd: "set_values",
-    description: "Set values of one object at a frame, creating a keyframe there or editing the existing one. One undo step. Value names are lower case: pos_x pos_y pos_z, rot_x rot_y rot_z, sca_x sca_y sca_z, bend_angle_x, alpha, rgb_mul, cam_fov, light_strength and so on (get_object shows the names in use). Colours are \"#RRGGBB\". Set transition (linear, instant, easeinquad, easeoutquad, easeinoutquad, easeinoutcubic, easeoutbounce, ...) to choose the easing from this keyframe to the next. Z is up; 16 units are one block. Rotation is in degrees. For cameras, rot_z is the heading: 0 looks along +Y, 90 along +X, 180 along -Y, and positive rot_x pitches down; a camera looking along +X has +Y on its right. Angles are interpolated numerically, so use -22 rather than 338 to turn the short way. A new character faces +Y. On a character, body or folder, positive rot_x tips the top forward (a front flip is rot_x 0 to 360); on a leg or arm, negative rot_x lifts it forward and positive bend_angle_x bends the knee. Rotation pivots at the object's origin (a character's feet), so to spin a character around its middle, parent it to a folder placed at the pivot and rotate the folder.",
+    description: "Set values of one object at a frame, creating a keyframe there or editing the existing one. One undo step. Value names are lower case: pos_x pos_y pos_z, rot_x rot_y rot_z, sca_x sca_y sca_z, bend_angle_x, alpha, rgb_mul, cam_fov, light_strength and so on (get_object shows the names in use). Colours are \"#RRGGBB\". Set transition (linear, instant, easeinquad, easeoutquad, easeinoutquad, easeinoutcubic, easeoutbounce, ...) to choose the easing from this keyframe to the next. Z is up; 16 units are one block. Rotation is in degrees. For cameras, rot_z is the heading: 0 looks along +Y, 90 along +X, 180 along -Y, and positive rot_x pitches down; a camera looking along +X has +Y on its right. Angles are interpolated numerically, so use -22 rather than 338 to turn the short way. A new character faces +Y. On a character, body or folder, positive rot_x tips the top forward (a front flip is rot_x 0 to 360); on a leg or arm, negative rot_x lifts it forward and positive bend_angle_x bends the knee. Rotation pivots at the object's origin (a character's feet) unless set_object_settings gives it another pivot.",
     shape: {
       id,
       frame: frame.optional().describe("Frame to keyframe at. Default: the current frame"),
@@ -302,7 +302,7 @@ export const tools = [
   {
     name: "get_project_settings",
     cmd: "get_project_settings",
-    description: "Read the project's settings: name, tempo (timeline frames per second), video resolution, render options, and every background setting.",
+    description: "Read the project's settings: name, tempo (timeline frames per second), video resolution, render options, every background setting, and the play region and repeat mode (loop).",
     shape: {},
   },
   {
@@ -327,6 +327,58 @@ export const tools = [
         .partial()
         .strict()
         .describe("Setting name to value"),
+    },
+  },
+  {
+    name: "duplicate_object",
+    cmd: "duplicate_object",
+    description: "Duplicate an object with its children, body parts and keyframes, like Duplicate in the timeline. The copy is placed next to the original under the same parent and selected. Returns the copy (its id, name, type and keyframe frames). One undo step. Body parts cannot be duplicated on their own.",
+    shape: { id },
+  },
+  {
+    name: "copy_keyframes",
+    cmd: "copy_keyframes",
+    description: "Copy keyframes to another frame, through the app's copy and paste: the keyframes of an object between frame and end_frame (default: just frame), together with its body parts' keyframes when it is a character, so a whole pose is copied at once. They land at to_frame plus their distance from frame, on the same object or on to_id. A character's pose goes to the body parts of the same name on the target character; a single body part goes to the matching part of to_id. Keyframes already at the target frames are replaced. Nothing is changed if the copy cannot be done. Returns copied, replaced and undo_steps (1, or 2 when keyframes were replaced). Use it to repeat a pose, hold a pose or loop a cycle.",
+    shape: {
+      id,
+      frame: frame.describe("First frame to copy from"),
+      end_frame: frame.optional().describe("Last frame to copy from. Default: frame"),
+      to_frame: frame.describe("Frame where the keyframe at frame lands"),
+      to_id: z.string().min(1).optional().describe("Object to copy to. Default: the same object"),
+    },
+  },
+  {
+    name: "set_view_camera",
+    cmd: "set_view_camera",
+    description: "Choose what the main view looks through: \"work\" (the free editing camera, see set_work_camera), \"active\" (the scene's active camera) or the id of a camera object, to see the shot as it will render. screenshot captures the view as chosen. get_status reports it as view_camera.",
+    shape: { camera: z.string().min(1).describe("work, active, or a camera object's id") },
+  },
+  {
+    name: "set_marker",
+    cmd: "set_marker",
+    description: "Add a timeline marker at a frame, or change the marker already there: its name, colour, or frame (to_frame moves it). Markers label moments such as a jump or a hit; get_scene lists them. Only the given fields change. Returns the marker and undo_steps.",
+    shape: {
+      frame,
+      name: z.string().optional(),
+      color: z.enum(["red", "orange", "yellow", "green", "forest_green", "teal", "blue", "purple", "pink"]).optional().describe("Default red"),
+      to_frame: frame.optional().describe("Move the existing marker to this frame"),
+    },
+  },
+  {
+    name: "remove_marker",
+    cmd: "remove_marker",
+    description: "Remove the timeline marker at a frame.",
+    shape: { frame },
+  },
+  {
+    name: "set_loop",
+    cmd: "set_loop",
+    description: "Set the timeline's play region (start and end frames), clear it, and choose whether playback repeats: off, repeat, or seamless (for loops whose last frame matches the first). With repeat on, playback loops inside the region, or over the whole animation when there is none. Movie exports use the region when one is set. get_project_settings reports it as loop. Not undone by undo, as in the app.",
+    shape: {
+      start: frame.optional().describe("First frame of the region; give end too"),
+      end: frame.optional().describe("Last frame of the region, after start"),
+      clear: z.boolean().optional().describe("Remove the region"),
+      repeat: z.enum(["off", "repeat", "seamless"]).optional(),
     },
   },
 ];

@@ -78,6 +78,7 @@ function bridge_cmd_get_scene(args)
 
 	result[?"frame"] = timeline_marker
 	ds_map_add_list(result, "objects", objects)
+	ds_map_add_list(result, "markers", bridge_markers_list())
 
 	return bridge_ok(result)
 }

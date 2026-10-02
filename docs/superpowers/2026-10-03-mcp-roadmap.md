@@ -15,6 +15,10 @@ the scene, creating and arranging objects, keyframing (single and batch),
 undo/redo, work camera, playback, screenshot, image export, movie export,
 background basics. 26 tools.
 
+Since then: phase 1 (object settings, name lists), phase 2 (project settings
+and the full background) and phase 3 (duplicate, copy keyframes and poses,
+view camera, markers, loop region) are done. 36 tools.
+
 ## Phases
 
 Each phase ends with tests, a rebuild, and a deploy to the installed app. The
@@ -45,3 +49,5 @@ use reorders priorities.
 - A project with missing model files can still raise a dialog on open.
 - Audio in exported movies is untested.
 - The design spec in `specs/` still describes the bridge as launch-flag only.
+- Marker names and the loop region are not checked for length; the loop region
+  and repeat mode are not undoable, matching the app.

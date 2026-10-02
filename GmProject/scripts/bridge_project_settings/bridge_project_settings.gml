@@ -462,7 +462,9 @@ function bridge_project_settings_map()
 
 function bridge_cmd_get_project_settings(args)
 {
-	return bridge_ok(bridge_project_settings_map())
+	var result = bridge_project_settings_map();
+	ds_map_add_map(result, "loop", bridge_loop_map())
+	return bridge_ok(result)
 }
 
 /// bridge_project_setting_error(name, value)

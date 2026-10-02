@@ -11,6 +11,7 @@ function bridge_startup()
 	bridge_quiet_message = ""
 
 	bridge_pending_kind = ""
+	bridge_skin_sources = ds_map_create()
 	bridge_skin_http = null
 	bridge_skin_done = false
 	bridge_skin_ok = false
@@ -290,6 +291,56 @@ function bridge_is_player_name(name)
 	return true
 }
 
+/// bridge_skin_resource(filename, modelfile)
+/// @arg filename
+/// @arg modelfile
+/// @desc Returns a skin resource for a PNG file. The file is added to the project, except when the
+/// bridge already added that very file (same path and size), which is reused. A different file with the
+/// same name gets its own copy. modelfile is the model the skin is for, or null.
+
+function bridge_skin_resource(fn, modelfile)
+{
+	var buf, sig, key, res;
+	buf = buffer_load_lib(fn)
+	sig = fn + "|" + string(buffer_get_size(buf))
+	buffer_delete(buf)
+
+	key = ds_map_find_first(bridge_skin_sources)
+	while (!is_undefined(key))
+	{
+		res = save_id_find(key)
+		if (res != null && res.object_index = obj_resource && res.type = e_res_type.SKIN && bridge_skin_sources[?key] = sig)
+			return res
+		key = ds_map_find_next(bridge_skin_sources, key)
+	}
+
+	// new_res asks about replacing a resource of the same name: the bridge answers no, which makes a copy
+	res = new_res(fn, e_res_type.SKIN)
+	if (modelfile != null)
+		res.player_skin = modelfile.player_skin
+	with (res)
+		res_load()
+
+	bridge_skin_sources[?res.save_id] = sig
+	return res
+}
+
+/// bridge_reset(everything)
+/// @arg everything
+/// @desc Puts the bridge back to idle after a command or a wait failed with an app error.
+/// Without it, errors would stay silenced and the next command would find a stale wait.
+
+function bridge_reset(everything)
+{
+	bridge_quiet = false
+	if (everything > 0)
+	{
+		bridge_quiet_until = 0
+		bridge_quiet_message = ""
+		bridge_pending_kind = ""
+	}
+}
+
 /// bridge_cmd_set_skin(args)
 /// @arg args
 /// @desc Sets the skin of a character from a PNG file, or downloads a player's skin by name.
@@ -318,12 +369,7 @@ function bridge_cmd_set_skin(args)
 		if (!bridge_is_image(string(fn)))
 			return bridge_error("bad_args", "The file is not a PNG image")
 
-		res = new_res(string(fn), e_res_type.SKIN)
-		if (owner.temp.model_file != null)
-			res.player_skin = owner.temp.model_file.player_skin
-		with (res)
-			res_load()
-
+		res = bridge_skin_resource(string(fn), owner.temp.model_file)
 		return bridge_skin_apply(owner, res)
 	}
 

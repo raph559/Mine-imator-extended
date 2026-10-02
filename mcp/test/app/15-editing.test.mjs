@@ -217,6 +217,7 @@ test("set_marker changes nothing when the request is wrong", async () => {
   const bad = [
     { frame: 1, color: "brown" },
     { frame: 1, name: 5 },
+    { frame: 1, name: "x".repeat(101) },
     { frame: -1 },
     { frame: 1, to_frame: 3 },
     { frame: 1, to_frame: -2 },

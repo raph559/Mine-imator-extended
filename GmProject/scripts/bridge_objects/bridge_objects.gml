@@ -4,21 +4,7 @@
 
 function bridge_bench_set_skin(fn)
 {
-	var res = null;
-	with (obj_resource)
-		if (type = e_res_type.SKIN && filename = filename_name(fn))
-			res = id
-
-	// new_res asks a question when the name is already taken, so only call it for new names
-	if (res = null)
-	{
-		res = new_res(fn, e_res_type.SKIN)
-		if (bench_settings.model_file != null)
-			res.player_skin = bench_settings.model_file.player_skin
-
-		with (res)
-			res_load()
-	}
+	var res = bridge_skin_resource(fn, bench_settings.model_file);
 
 	with (bench_settings)
 	{
@@ -186,14 +172,19 @@ function bridge_cmd_set_parent(args)
 			return bridge_error("not_found", "No object with id " + string(parentid))
 	}
 
+	// An object cannot go inside itself or one of its children
+	for (var up = par; up != null && up != app; up = up.parent)
+		if (up = tl)
+			return bridge_error("bad_args", "An object cannot be parented to itself or to one of its children")
+
+	// Already there: nothing to do, and no empty undo step
+	if (tl.parent = par)
+		return bridge_ok(bridge_tl_summary(tl))
+
 	with (tl)
 		tl_select_single()
 	app_update_tl_edit()
 	action_tl_parent(par, ds_list_size(par.tree_list))
-
-	// The action skips moves that would put an object inside itself
-	if (tl.parent != par)
-		return bridge_error("bad_args", "An object cannot be parented to itself or to one of its children")
 
 	return bridge_ok(bridge_tl_summary(tl))
 }

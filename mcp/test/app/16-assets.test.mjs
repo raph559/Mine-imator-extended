@@ -1,30 +1,9 @@
 import assert from "node:assert/strict";
-import { copyFileSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
 import path from "node:path";
-import { crc32, deflateSync } from "node:zlib";
 import { after, before, test } from "node:test";
-import { exe, newProject, SKIN_TEST_PORT, startApp, tmpDir } from "./harness.mjs";
-
-/** A PNG of the given size filled with one colour. */
-function png(width, height, [r, g, b, a] = [200, 120, 40, 255]) {
-  const row = Buffer.alloc(1 + width * 4);
-  for (let x = 0; x < width; x++) row.set([r, g, b, a], 1 + x * 4);
-  const raw = Buffer.concat(Array.from({ length: height }, () => row));
-  const chunk = (type, data) => {
-    const body = Buffer.concat([Buffer.from(type), data]);
-    const out = Buffer.alloc(8 + data.length + 4);
-    out.writeUInt32BE(data.length, 0);
-    body.copy(out, 4);
-    out.writeUInt32BE(crc32(body), 8 + data.length);
-    return out;
-  };
-  const header = Buffer.alloc(13);
-  header.writeUInt32BE(width, 0);
-  header.writeUInt32BE(height, 4);
-  header.set([8, 6, 0, 0, 0], 8);
-  return Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk("IHDR", header), chunk("IDAT", deflateSync(raw)), chunk("IEND", Buffer.alloc(0))]);
-}
+import { exe, newProject, png, SKIN_TEST_PORT, startApp, tmpDir } from "./harness.mjs";
 
 const model = {
   name: "bridge_box",
@@ -92,6 +71,24 @@ test("set_skin gives a character a skin from a file, and undo puts the old one b
 
   await call("undo", { steps: 2 });
   assert.equal(await skinOf(hero), null);
+});
+
+test("the same skin file is added once, and another file with the same name gets its own copy", async () => {
+  const first = await call("create_object", { type: "character", skin: `${dir}/skin.png` });
+  const second = await call("create_object", { type: "character" });
+  const reused = await call("set_skin", { id: second.id, path: `${dir}/skin.png` });
+  assert.equal(reused.skin, await skinOf(first));
+
+  const other = tmpDir();
+  writeFileSync(`${other}/skin.png`, png(64, 64, [10, 200, 30, 255]));
+  const third = await call("create_object", { type: "character" });
+  const copy = await call("set_skin", { id: third.id, path: `${other}/skin.png` });
+  assert.notEqual(copy.skin, reused.skin);
+  const files = (await resources()).filter((r) => r.type === "skin").map((r) => r.file);
+  assert.equal(new Set(files).size, files.length, "every skin resource has its own file name");
+  assert.equal(await skinOf(third), copy.skin);
+  // The first character still has the first file
+  assert.equal(await skinOf(first), reused.skin);
 });
 
 test("set_skin downloads a player's skin by name", async () => {
@@ -207,3 +204,22 @@ test("importing the same file twice keeps both, without asking", async () => {
   assert.equal((await call("get_status")).window_state, "");
 });
 
+
+test("a project whose model file is missing still opens, without a dialog", async () => {
+  const folder = tmpDir();
+  await call("project_new", { name: "missing-model", folder, discard: true });
+  await call("import_model", { path: `${dir}/box.mimodel`, name: "Crate" });
+  await call("project_save");
+
+  // Take the model out of the project folder, as if the file had been moved away
+  const copies = readdirSync(folder).filter((name) => name.endsWith(".mimodel"));
+  assert.ok(copies.length > 0, "the model is saved with the project");
+  for (const name of copies) rmSync(`${folder}/${name}`);
+  assert.ok(!existsSync(`${folder}/box.mimodel`));
+
+  const status = await call("project_open", { path: `${folder}/missing-model.miproject`, discard: true });
+  assert.equal(status.project_name, "missing-model");
+  assert.equal(status.window_state, "");
+  assert.equal((await call("get_status")).window_state, "");
+  await newProject(app.client);
+});

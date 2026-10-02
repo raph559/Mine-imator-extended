@@ -269,7 +269,7 @@ export const tools = [
   {
     name: "set_background",
     cmd: "set_background",
-    description: "Change the scene's background: sky, sun and moon, clouds, fog, wind, ground and tint colours. Only the given settings change, and nothing is applied if one is wrong. Returns every background setting afterwards, plus undo_steps (one per setting that changed). Call it with no settings to just read them.",
+    description: "Change the scene's background: sky, sun and moon, clouds, a sky image, fog, wind, ground and tint colours. Only the given settings change, and nothing is applied if one is wrong. Returns every background setting afterwards, plus undo_steps (one per setting that changed). Call it with no settings to just read them.",
     shape: {
       sky_time: z.number().optional().describe("Time of day, the same number as the Time setting in the Background tab (default -45)"),
       sky_rotation: z.number().optional(),
@@ -308,6 +308,11 @@ export const tools = [
       fog_color: hexColor.optional(),
       sky_moon_phase: z.number().int().min(0).max(7).optional(),
       biome: z.string().optional().describe("Biome name, e.g. plains, desert"),
+      image: z.string().nullable().optional().describe("Sky image: id of an image from import_image, or null for none. Also set image_show"),
+      image_type: z.enum(["image", "sphere"]).optional().describe("A flat picture behind the scene, or wrapped around it as a sphere"),
+      image_stretch: z.boolean().optional().describe("Stretch a flat image to the whole view"),
+      image_show: z.boolean().optional().describe("Show the sky image"),
+      image_rotation: z.number().optional().describe("Rotation of the sky image in degrees"),
     },
   },
   {

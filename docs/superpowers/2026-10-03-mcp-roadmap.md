@@ -38,31 +38,27 @@ use reorders priorities.
 | 3. Editing helpers | Duplicate objects, copy a pose between frames, look through the scene camera, markers and loop region | About one session. Low risk |
 | 4. Assets | Skins by player name, custom models, scenery and world import, listing resources | Larger. These paths use dialogs and load in the background; investigate before designing |
 | 5. Particles and audio | Particle spawners, sound tracks | Larger. Audio also closes the untested gap in movie export |
-| 6. Hardening | Deferred review items, remaining dialog paths, image size cap, refreshed design spec | Small; can be spread across the other phases |
+| 6. Hardening | Deferred review items, remaining dialog paths, image size cap, refreshed design spec | Done |
 
-## Known loose ends (phase 6)
+## Left over
 
-- `set_parent` to itself or a descendant, and `move_keyframes` with from equal
-  to to, leave an empty undo step.
-- Error replies can overtake earlier queued replies; a request without an id
-  gets a reply without one.
-- `create_object` with a skin reuses a loaded skin with the same file name even
-  if it is a different file (`set_skin` copies it instead).
-- The dispatcher ignores `window_busy`, so state can change under a user who is
-  mid-drag.
-- Exported and screenshot images are returned in full, with no size cap.
-- A project with missing model files can still raise a dialog on open.
-- Particle types (the dozens of per-type options in the app's particle editor)
-  are not exposed: spawners come from presets, and custom presets can be made
-  in the app and passed to create_object by path.
-- The design spec in `specs/` still describes the bridge as launch-flag only.
-- World import (a box of blocks from a Minecraft save) is not exposed: there is
-  no world on the development machine to test it with. The call sequence is
-  known: `action_res_import_world` then `action_res_scenery_animate`, set
+Phase 6 fixed the review items: empty undo steps for a no-op `set_parent` and
+`move_keyframes`, skins reused only when it is the very same file, an image size
+cap for tool results, the app's message boxes (including the missing-model
+dialog on open), a stuck "quiet" state after an app error, marker name length,
+the sky image, and the design spec. Out-of-order replies are by design and are
+now documented.
+
+What is not done, in rough order of value:
+
+- Importing a box of blocks from a Minecraft world. No world exists on the
+  development machine to test with. The call sequence is known:
+  `action_res_import_world` then `action_res_scenery_animate`, set
   `setting_world_import_filter_mode` too, and wait for `res.ready` as
   `import_scenery` does.
-- Background sky images are not exposed yet; `import_image` plus
-  `action_background_image` and `action_background_image_show` would do it.
-- Setting the same skin file twice adds a second copy of the resource.
-- Marker names and the loop region are not checked for length; the loop region
-  and repeat mode are not undoable, matching the app.
+- Particle types, the per-type options of the app's particle editor. Spawners
+  come from presets, and custom presets made in the app can be used by path.
+- A drag in progress in the app is not detected; commands run regardless.
+- Opening a project saved by the custom build in the official app, and the
+  custom build's upgrade-key state, have not been checked.
+- The loop region and repeat mode are not undoable, as in the app.

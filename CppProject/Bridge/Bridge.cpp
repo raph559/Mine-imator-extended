@@ -273,6 +273,7 @@ namespace CppProject
 				catch (const QString& ex)
 				{
 					DEBUG("Bridge command " + request.cmd + " failed: " + ex);
+					bridge_reset(scope, 0);
 					ReplyError(request.socket, request.id, "internal_error", ex);
 				}
 			}
@@ -283,6 +284,7 @@ namespace CppProject
 		catch (const QString& ex)
 		{
 			DEBUG("Bridge poll failed: " + ex);
+			bridge_reset(scope, 1);
 			ReplyError(waitingRequest.socket, waitingRequest.id, "internal_error", ex);
 			waiting = false;
 		}

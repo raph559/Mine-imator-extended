@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { after, before, test } from "node:test";
-import { newProject, startApp, tmpDir } from "./harness.mjs";
+import { newProject, png, startApp, tmpDir } from "./harness.mjs";
 
 let app, call;
 before(async () => {
@@ -83,7 +83,7 @@ test("every background setting can be set and reads back the same", async () => 
   const colors = ["sky_color", "sky_clouds_color", "sunlight_color", "ambient_color", "night_color", "grass_color", "foliage_color", "water_color", "fog_color"];
 
   const current = (await call("get_project_settings")).background;
-  assert.deepEqual(Object.keys(current).sort(), [...numbers, ...bools, ...colors, "biome", "sky_moon_phase"].sort());
+  assert.deepEqual(Object.keys(current).sort(), [...numbers, ...bools, ...colors, "biome", "sky_moon_phase", "image", "image_type", "image_stretch", "image_show", "image_rotation"].sort());
 
   for (const name of numbers) {
     const value = current[name] + 0.5;
@@ -102,4 +102,28 @@ test("every background setting can be set and reads back the same", async () => 
   await assert.rejects(call("set_background", { sky_moon_phase: 9 }), (err) => err.code === "bad_args");
   await assert.rejects(call("set_background", { no_such_setting: 1 }), (err) => err.code === "bad_args");
   await assert.rejects(call("set_background", { fog_height: "tall" }), (err) => err.code === "bad_args");
+});
+
+test("set_background chooses a sky image from an imported image, and none puts it away", async () => {
+  const dir = tmpDir();
+  writeFileSync(`${dir}/sky.png`, png(64, 32, [90, 140, 220, 255]));
+  const image = await call("import_image", { path: `${dir}/sky.png` });
+
+  const wanted = { image: image.id, image_show: true, image_type: "sphere", image_stretch: false, image_rotation: 30 };
+  const result = await call("set_background", wanted);
+  for (const [key, value] of Object.entries(wanted)) assert.equal(result[key], value, key);
+  assert.equal(result.undo_steps, 5);
+  assert.equal((await call("get_project_settings")).background.image, image.id);
+  assert.equal((await call("list_resources")).resources.find((r) => r.id === image.id).used, true);
+  assert.equal((await call("set_background", wanted)).undo_steps, 0);
+
+  assert.equal((await call("set_background", { image: null })).image ?? null, null);
+  assert.equal((await call("list_resources")).resources.find((r) => r.id === image.id).used, false);
+
+  const before = await call("get_project_settings");
+  await assert.rejects(call("set_background", { image: "no-such-id" }), (err) => err.code === "not_found");
+  await assert.rejects(call("set_background", { image: "default" }), (err) => err.code === "bad_args");
+  await assert.rejects(call("set_background", { image: 5 }), (err) => err.code === "bad_args");
+  await assert.rejects(call("set_background", { image_type: "cube", fog_show: false }), (err) => err.code === "bad_args");
+  assert.deepEqual(await call("get_project_settings"), before);
 });

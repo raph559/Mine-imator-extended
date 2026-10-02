@@ -3,7 +3,7 @@
 
 function bridge_background_names()
 {
-	return array("sky_time", "sky_rotation", "sunlight_strength", "sunlight_angle", "sky_sun_angle", "sky_sun_scale", "sky_moon_angle", "sky_moon_scale", "sky_clouds_speed", "sky_clouds_height", "sky_clouds_size", "sky_clouds_thickness", "sky_clouds_offset", "fog_distance", "fog_size", "fog_height", "wind_speed", "wind_strength", "wind_direction", "sky_clouds_show", "fog_show", "fog_sky", "fog_color_custom", "twilight", "wind", "ground_show", "sky_color", "sky_clouds_color", "sunlight_color", "ambient_color", "night_color", "grass_color", "foliage_color", "water_color", "fog_color", "sky_moon_phase", "biome")
+	return array("sky_time", "sky_rotation", "sunlight_strength", "sunlight_angle", "sky_sun_angle", "sky_sun_scale", "sky_moon_angle", "sky_moon_scale", "sky_clouds_speed", "sky_clouds_height", "sky_clouds_size", "sky_clouds_thickness", "sky_clouds_offset", "fog_distance", "fog_size", "fog_height", "wind_speed", "wind_strength", "wind_direction", "sky_clouds_show", "fog_show", "fog_sky", "fog_color_custom", "twilight", "wind", "ground_show", "sky_color", "sky_clouds_color", "sunlight_color", "ambient_color", "night_color", "grass_color", "foliage_color", "water_color", "fog_color", "sky_moon_phase", "biome", "image", "image_type", "image_stretch", "image_show", "image_rotation")
 }
 
 /// bridge_background_kind(name)
@@ -54,6 +54,13 @@ function bridge_background_kind(name)
 			return "color"
 		case "sky_moon_phase": return "phase"
 		case "biome": return "biome"
+		case "image": return "imageres"
+		case "image_type": return "imagetype"
+		case "image_stretch":
+		case "image_show":
+			return "bool"
+		case "image_rotation":
+			return "number"
 	}
 	
 	return ""
@@ -104,6 +111,11 @@ function bridge_background_get(name)
 		case "fog_color": return "#" + color_to_hex(background_fog_color)
 		case "sky_moon_phase": return background_sky_moon_phase
 		case "biome": return background_biome
+		case "image": return bridge_res_id(background_image)
+		case "image_type": return background_image_type
+		case "image_stretch": return (background_image_stretch > 0)
+		case "image_show": return (background_image_show > 0)
+		case "image_rotation": return background_image_rotation
 	}
 	
 	return undefined
@@ -144,6 +156,25 @@ function bridge_background_error(name, val)
 			if (find_biome(string(val)) = null)
 				return "Unknown biome " + string(val)
 			return ""
+
+		case "imagetype":
+			if (!is_string(val) || (val != "image" && val != "sphere"))
+				return "image_type must be image or sphere"
+			return ""
+
+		case "imageres":
+		{
+			// null shows no image
+			if (is_real(val) && !is_bool(val) && val = null)
+				return ""
+			if (!is_string(val))
+				return "image must be the id of an image from import_image, or null for none"
+			if (bridge_find_res(val) = null)
+				return "Unknown resource " + string(val) + ", see list_resources"
+			if (bridge_find_res(val).type != e_res_type.TEXTURE)
+				return "image must be an image added with import_image"
+			return ""
+		}
 	}
 
 	return "Unknown background setting " + string(name)
@@ -380,6 +411,41 @@ function bridge_background_apply(name, val)
 				return 0
 			action_background_biome(string(val))
 			return 1
+
+		case "image":
+		{
+			var res = null;
+			if (is_string(val))
+				res = bridge_find_res(val)
+			if (background_image = res)
+				return 0
+			action_background_image(res)
+			return 1
+		}
+
+		case "image_type":
+			if (background_image_type = val)
+				return 0
+			action_background_image_type(string(val))
+			return 1
+
+		case "image_stretch":
+			if ((background_image_stretch > 0) = (val > 0))
+				return 0
+			action_background_image_stretch((val > 0))
+			return 1
+
+		case "image_show":
+			if ((background_image_show > 0) = (val > 0))
+				return 0
+			action_background_image_show((val > 0))
+			return 1
+
+		case "image_rotation":
+			if (background_image_rotation = bridge_real(val))
+				return 0
+			action_background_image_rotation(bridge_real(val), false)
+			return 1
 	}
 	
 	return 0
@@ -414,7 +480,7 @@ function bridge_cmd_set_background(args)
 		err = bridge_background_error(key, args[?key])
 		if (err != "")
 		{
-			if (string_pos("Unknown biome", err) = 1)
+			if (string_pos("Unknown biome", err) = 1 || string_pos("Unknown resource", err) = 1)
 				return bridge_error("not_found", err)
 			return bridge_error("bad_args", err)
 		}

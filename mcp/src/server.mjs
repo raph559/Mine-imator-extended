@@ -1,9 +1,9 @@
 #!/usr/bin/env node
-import { readFile } from "node:fs/promises";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { BridgeClient } from "./bridge-client.mjs";
+import { imageContent } from "./image.mjs";
 import { launchApp } from "./launcher.mjs";
 import { describeError, prepareArgs, tools } from "./tools.mjs";
 
@@ -20,8 +20,7 @@ for (const tool of tools) {
       const args = await prepareArgs(tool, input);
       const result = await bridge.call(tool.cmd, args, { timeoutMs: tool.timeoutMs });
       const content = [text(result)];
-      if (tool.returnsImage)
-        content.push({ type: "image", data: (await readFile(result.path)).toString("base64"), mimeType: "image/png" });
+      if (tool.returnsImage) content.push(...(await imageContent(result.path)));
       return { content };
     } catch (err) {
       return failure(err);

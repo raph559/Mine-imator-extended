@@ -318,6 +318,8 @@ function bridge_cmd_set_marker(args)
 	hasname = ds_map_exists(args, "name")
 	if (hasname && !is_string(args[?"name"]))
 		return bridge_error("bad_args", "name must be a string")
+	if (hasname && string_length(args[?"name"]) > 100)
+		return bridge_error("bad_args", "name can be up to 100 characters")
 
 	colorindex = -1
 	if (ds_map_exists(args, "color"))

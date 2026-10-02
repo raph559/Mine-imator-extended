@@ -50,6 +50,12 @@ test("rename_object and set_parent change the object", async () => {
   await assert.rejects(call("set_parent", { id: folder.id, parent: cube.id }), (err) => err.code === "bad_args");
   assert.equal((await call("set_parent", { id: cube.id, parent: "" })).parent, "");
   await assert.rejects(call("set_parent", { id: cube.id, parent: "no-such-id" }), (err) => err.code === "not_found");
+
+  // Refused or already there: no undo step is left behind
+  const steps = (await call("get_status")).undo_steps;
+  await assert.rejects(call("set_parent", { id: cube.id, parent: cube.id }), (err) => err.code === "bad_args");
+  assert.equal((await call("set_parent", { id: cube.id, parent: "" })).parent, "");
+  assert.equal((await call("get_status")).undo_steps, steps);
 });
 
 test("select marks exactly the given objects", async () => {

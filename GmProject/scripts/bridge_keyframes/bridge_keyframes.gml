@@ -255,6 +255,14 @@ function bridge_cmd_move_keyframes(args)
 	if (toframe != fromframe && bridge_find_keyframe(tl, toframe) != null)
 		return bridge_error("bad_args", "There is already a keyframe at frame " + string(toframe))
 
+	// Same frame: nothing to move, and no empty undo step
+	if (toframe = fromframe)
+	{
+		result = ds_map_create()
+		result[?"frame"] = kf.position
+		return bridge_ok(result)
+	}
+
 	tl_deselect_all()
 	tl_keyframe_select(kf)
 	app_update_tl_edit()

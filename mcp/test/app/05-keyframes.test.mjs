@@ -71,6 +71,9 @@ test("move_keyframes moves one keyframe and refuses an occupied or missing frame
   assert.deepEqual(await call("move_keyframes", { id: cube.id, from: 24, to: 30 }), { frame: 30 });
   assert.deepEqual((await object()).frames, [0, 30]);
   assert.equal((await keyframe(30)).values.pos_x, 64);
+  const steps = (await call("get_status")).undo_steps;
+  assert.deepEqual(await call("move_keyframes", { id: cube.id, from: 30, to: 30 }), { frame: 30 });
+  assert.equal((await call("get_status")).undo_steps, steps, "moving to the same frame is not an undo step");
   await assert.rejects(call("move_keyframes", { id: cube.id, from: 30, to: 0 }), (err) => err.code === "bad_args");
   await assert.rejects(call("move_keyframes", { id: cube.id, from: 99, to: 5 }), (err) => err.code === "not_found");
   assert.deepEqual((await object()).frames, [0, 30]);

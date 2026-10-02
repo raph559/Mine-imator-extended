@@ -81,6 +81,8 @@ test("input shapes reject bad input and accept good input", () => {
   const background = z.object(tool("set_background").shape);
   assert.ok(background.safeParse({ fog_show: false, sky_color: "#102030", sky_moon_phase: 3 }).success);
   assert.ok(!background.safeParse({ sky_color: "blue" }).success);
+  assert.ok(background.safeParse({ image: null, image_show: false, image_type: "sphere" }).success);
+  assert.ok(!background.safeParse({ image_type: "cube" }).success);
   assert.ok(!background.safeParse({ sky_moon_phase: 9 }).success);
 });
 

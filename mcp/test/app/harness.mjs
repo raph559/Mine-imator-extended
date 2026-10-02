@@ -3,6 +3,7 @@ import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync }
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { crc32, deflateSync } from "node:zlib";
 import { BridgeClient } from "../../src/bridge-client.mjs";
 
 export const TEST_PORT = 41235;
@@ -18,6 +19,26 @@ const TEST_ROOT = path.join(os.tmpdir(), "mi-bridge-tests");
 // recent list) or on purpose. They are put back as they were afterwards.
 const dataDir = path.join(path.dirname(exe), "Data");
 const PRESERVED = ["recent.midata", "settings.midata"];
+
+/** A PNG of the given size filled with one colour. */
+export function png(width, height, [r, g, b, a] = [200, 120, 40, 255]) {
+  const row = Buffer.alloc(1 + width * 4);
+  for (let x = 0; x < width; x++) row.set([r, g, b, a], 1 + x * 4);
+  const raw = Buffer.concat(Array.from({ length: height }, () => row));
+  const chunk = (type, data) => {
+    const body = Buffer.concat([Buffer.from(type), data]);
+    const out = Buffer.alloc(8 + data.length + 4);
+    out.writeUInt32BE(data.length, 0);
+    body.copy(out, 4);
+    out.writeUInt32BE(crc32(body), 8 + data.length);
+    return out;
+  };
+  const header = Buffer.alloc(13);
+  header.writeUInt32BE(width, 0);
+  header.writeUInt32BE(height, 4);
+  header.set([8, 6, 0, 0, 0], 8);
+  return Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk("IHDR", header), chunk("IDAT", deflateSync(raw)), chunk("IEND", Buffer.alloc(0))]);
+}
 
 /** A fresh folder for a test project, with forward slashes as the bridge expects. */
 export function tmpDir() {

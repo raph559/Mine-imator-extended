@@ -1,0 +1,219 @@
+import { mkdir } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import { z } from "zod";
+
+const id = z.string().min(1).describe("Object id, from get_scene or create_object");
+const frame = z.number().int().min(0).describe("Timeline frame, 0 or more");
+const overwrite = z.boolean().optional().describe("Replace the file if it already exists");
+
+/** Mine-imator works with forward slashes in paths. */
+export function normalizePath(p) {
+  return p.replaceAll("\\", "/");
+}
+
+export const tools = [
+  {
+    name: "get_status",
+    cmd: "get_status",
+    description: "Report what Mine-imator is doing: version, open project, unsaved changes, current frame, playback, object count, undo steps. window_state is \"startup\" on the home screen and \"\" when a project is open.",
+    shape: {},
+  },
+  {
+    name: "project_new",
+    cmd: "project_new",
+    description: "Create and open a new empty project. Fails with unsaved_changes if the open project has unsaved work, unless discard is true.",
+    shape: {
+      name: z.string().min(1).describe("Project name"),
+      folder: z.string().optional().describe("Folder to create the project in. Default: a folder named after the project in Mine-imator's Projects folder"),
+      discard: z.boolean().optional().describe("Drop unsaved changes of the open project"),
+    },
+    paths: ["folder"],
+  },
+  {
+    name: "project_open",
+    cmd: "project_open",
+    description: "Open a .miproject file. Fails with unsaved_changes if the open project has unsaved work, unless discard is true.",
+    shape: {
+      path: z.string().min(1).describe("Full path of the .miproject file"),
+      discard: z.boolean().optional().describe("Drop unsaved changes of the open project"),
+    },
+    paths: ["path"],
+  },
+  {
+    name: "project_save",
+    cmd: "project_save",
+    description: "Save the open project to its file.",
+    shape: {},
+  },
+  {
+    name: "get_scene",
+    cmd: "get_scene",
+    description: "List every object in the project with its id, name, type, parent, selection and keyframe frames. A character's limbs are separate objects of type bodypart whose part_of is the character's id; pose a limb by setting values on that object.",
+    shape: {},
+  },
+  {
+    name: "get_object",
+    cmd: "get_object",
+    description: "Read one object: its values at the current frame and every keyframe with its values. Position, rotation and scale are always listed, other values only when they differ from the default.",
+    shape: { id },
+  },
+  {
+    name: "create_object",
+    cmd: "create_object",
+    description: "Create an object at the origin and select it. Returns its id. Characters come with body part objects (see get_scene).",
+    shape: {
+      type: z.enum(["char", "character", "item", "block", "text", "cube", "cone", "cylinder", "sphere", "surface", "camera", "spotlight", "pointlight", "folder"]),
+      name: z.string().optional().describe("Name shown in the timeline"),
+      model: z.string().optional().describe("Character model name, e.g. steve, alex, zombie. Characters only"),
+      skin: z.string().optional().describe("Full path of a skin PNG. Characters only"),
+    },
+    paths: ["skin"],
+  },
+  {
+    name: "remove_object",
+    cmd: "remove_object",
+    description: "Remove an object and its children. Body parts cannot be removed on their own.",
+    shape: { id },
+  },
+  {
+    name: "rename_object",
+    cmd: "rename_object",
+    description: "Rename an object. An empty name restores the default name.",
+    shape: { id, name: z.string() },
+  },
+  {
+    name: "set_parent",
+    cmd: "set_parent",
+    description: "Move an object under another object or folder, so it follows its parent's transform. Use an empty parent to move it back to the top level.",
+    shape: { id, parent: z.string().describe("Id of the new parent, or \"\" for the top level") },
+  },
+  {
+    name: "select_objects",
+    cmd: "select",
+    description: "Select exactly these objects in the app, deselecting everything else.",
+    shape: { ids: z.array(z.string().min(1)) },
+  },
+  {
+    name: "undo",
+    cmd: "undo",
+    description: "Undo the last change, the same as Ctrl+Z in the app. done is false when there was nothing to undo.",
+    shape: {},
+  },
+  {
+    name: "redo",
+    cmd: "redo",
+    description: "Redo the last undone change. done is false when there was nothing to redo.",
+    shape: {},
+  },
+  {
+    name: "set_frame",
+    cmd: "set_frame",
+    description: "Move the timeline marker to a frame. The view shows the scene at that frame.",
+    shape: { frame },
+  },
+  {
+    name: "set_values",
+    cmd: "set_values",
+    description: "Set values of one object at a frame, creating a keyframe there or editing the existing one. One undo step. Value names are lower case: pos_x pos_y pos_z, rot_x rot_y rot_z, sca_x sca_y sca_z, bend_angle_x, alpha, rgb_mul, cam_fov, light_strength and so on (get_object shows the names in use). Colours are \"#RRGGBB\". Set transition (linear, instant, easeinquad, easeoutquad, easeinoutquad, easeinoutcubic, easeoutbounce, ...) to choose the easing from this keyframe to the next. Z is up; 16 units are one block.",
+    shape: {
+      id,
+      frame: frame.optional().describe("Frame to keyframe at. Default: the current frame"),
+      values: z.record(z.string(), z.union([z.number(), z.string(), z.boolean()])).describe("Value name to value"),
+    },
+  },
+  {
+    name: "remove_keyframes",
+    cmd: "remove_keyframes",
+    description: "Remove an object's keyframes at the given frames.",
+    shape: { id, frames: z.array(frame).min(1) },
+  },
+  {
+    name: "move_keyframe",
+    cmd: "move_keyframes",
+    description: "Move one keyframe of an object to another frame. Fails if the target frame already has a keyframe.",
+    shape: { id, from: frame, to: frame },
+  },
+  {
+    name: "set_work_camera",
+    cmd: "set_work_camera",
+    description: "Point the viewport's work camera: it orbits the focus point at the given angles and distance. Only the given fields change. This is the editing view, not a camera object in the scene.",
+    shape: {
+      focus: z.array(z.number()).length(3).optional().describe("Point to look at, [x, y, z]"),
+      angle_xy: z.number().optional().describe("Horizontal orbit angle in degrees"),
+      angle_z: z.number().optional().describe("Vertical orbit angle in degrees, -89.9 to 89.9"),
+      zoom: z.number().positive().optional().describe("Distance from the focus point"),
+    },
+  },
+  {
+    name: "play",
+    cmd: "play",
+    description: "Start timeline playback from the current frame.",
+    shape: {},
+  },
+  {
+    name: "stop",
+    cmd: "stop",
+    description: "Stop timeline playback.",
+    shape: {},
+  },
+  {
+    name: "screenshot",
+    cmd: "screenshot",
+    description: "Capture the main 3D view as it is drawn in the app right now and return the image. Fast; use it to check your work. Selection gizmos of the selected object are included.",
+    shape: {
+      path: z.string().optional().describe("Where to save the PNG. Default: a temp file"),
+      overwrite,
+    },
+    paths: ["path"],
+    returnsImage: true,
+  },
+  {
+    name: "export_image",
+    cmd: "export_image",
+    description: "Render the current frame at the project resolution through the scene's camera and return the image. Slower than screenshot; high quality can take a while.",
+    shape: {
+      path: z.string().optional().describe("Where to save the PNG. Default: a temp file"),
+      overwrite,
+      high_quality: z.boolean().optional().describe("Use the full renderer. Default true"),
+      include_hidden: z.boolean().optional(),
+      remove_background: z.boolean().optional(),
+    },
+    paths: ["path"],
+    returnsImage: true,
+    timeoutMs: 600000,
+  },
+  {
+    name: "set_background",
+    cmd: "set_background",
+    description: "Change background settings and report the current ones. Only the given fields change.",
+    shape: {
+      sky_time: z.number().optional().describe("Time of day, the same number as the Time setting in the Background tab"),
+      ground_show: z.boolean().optional().describe("Show the ground plane"),
+      biome: z.string().optional().describe("Biome name, e.g. plains"),
+      sky_color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+    },
+  },
+];
+
+/** Turns validated tool input into bridge command args. */
+export async function prepareArgs(tool, input) {
+  const args = { ...input };
+  for (const key of tool.paths ?? []) {
+    if (typeof args[key] === "string") args[key] = normalizePath(args[key]);
+  }
+  if (tool.returnsImage && !args.path) {
+    const dir = path.join(os.tmpdir(), "mineimator-mcp");
+    await mkdir(dir, { recursive: true });
+    args.path = normalizePath(path.join(dir, `${tool.name}-${Date.now()}.png`));
+  }
+  return args;
+}
+
+/** One line a model can act on. */
+export function describeError(err) {
+  if (err?.code === "ECONNREFUSED")
+    return "Mine-imator is not running with the bridge enabled. Call launch_app, or start the custom build with --bridge.";
+  if (err?.name === "BridgeError") return `${err.code}: ${err.message}`;
+  return String(err?.message ?? err);
+}

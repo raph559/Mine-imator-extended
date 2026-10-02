@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "test": "node --test \"test/unit/*.test.mjs\"",
-    "test:app": "node --test --test-concurrency=1 \"test/app/*.test.mjs\""
+    "test:app": "node test/app/run.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.31.0",

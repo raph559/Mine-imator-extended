@@ -23,10 +23,10 @@ before(async () => {
     env: { ...process.env, MINEIMATOR_BRIDGE_PORT: String(TEST_PORT) },
   }));
 });
-after(async () => { await mcp?.close(); app?.stop(); });
+after(async () => { await mcp?.close(); await app?.stop(); });
 
 test("character walks, camera moves, project saves, frame exports", async () => {
-  await call("project_new", { name: "acceptance", folder });
+  await call("project_new", { name: "acceptance", folder, discard: true });
 
   const char = await call("create_object", { type: "character", name: "Hero" });
   await call("set_values", { id: char.id, frame: 0, values: { pos_x: -48, pos_y: 0 } });

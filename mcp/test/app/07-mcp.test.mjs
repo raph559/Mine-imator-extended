@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { rmSync } from "node:fs";
 import { after, before, test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
@@ -17,7 +18,7 @@ before(async () => {
     env: { ...process.env, MINEIMATOR_BRIDGE_PORT: String(TEST_PORT) },
   }));
 });
-after(async () => { await mcp?.close(); app?.stop(); });
+after(async () => { await mcp?.close(); await app?.stop(); });
 
 test("lists every tool", async () => {
   const names = (await mcp.listTools()).tools.map((t) => t.name);
@@ -32,7 +33,7 @@ test("launch_app reports the running app without starting another", async () => 
 
 test("drives the app: project, object, keyframes, screenshot with image content", async () => {
   const folder = tmpDir().replaceAll("/", "\\"); // Windows-style input must be accepted
-  assert.equal(json(await mcp.callTool({ name: "project_new", arguments: { name: "mcp", folder } })).project_name, "mcp");
+  assert.equal(json(await mcp.callTool({ name: "project_new", arguments: { name: "mcp", folder, discard: true } })).project_name, "mcp");
   const cube = json(await mcp.callTool({ name: "create_object", arguments: { type: "cube" } }));
   await mcp.callTool({ name: "set_values", arguments: { id: cube.id, frame: 0, values: { pos_z: 0 } } });
   await mcp.callTool({ name: "set_values", arguments: { id: cube.id, frame: 24, values: { pos_z: 32, transition: "easeoutbounce" } } });
@@ -41,6 +42,7 @@ test("drives the app: project, object, keyframes, screenshot with image content"
   assert.equal(shot.content[1].type, "image");
   assert.equal(shot.content[1].mimeType, "image/png");
   assert.ok(shot.content[1].data.length > 1000);
+  rmSync(json(shot).path, { force: true }); // the server saved it to a temp file because no path was given
 });
 
 test("bridge errors come back as tool errors with the code", async () => {

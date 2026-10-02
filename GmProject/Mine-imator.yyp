@@ -1329,6 +1329,7 @@
     {"id":{"name":"app_event_draw","path":"scripts/app_event_draw/app_event_draw.yy",},"order":31,},
     {"id":{"name":"app_event_game_end","path":"scripts/app_event_game_end/app_event_game_end.yy",},"order":33,},
     {"id":{"name":"app_event_http","path":"scripts/app_event_http/app_event_http.yy",},"order":35,},
+    {"id":{"name":"bridge_project","path":"scripts/bridge_project/bridge_project.yy",},"order":35,},
     {"id":{"name":"bridge_core","path":"scripts/bridge_core/bridge_core.yy",},"order":35,},
     {"id":{"name":"app_event_step","path":"scripts/app_event_step/app_event_step.yy",},"order":37,},
     {"id":{"name":"app_mouse_box","path":"scripts/app_mouse_box/app_mouse_box.yy",},"order":39,},

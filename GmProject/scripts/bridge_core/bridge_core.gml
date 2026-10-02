@@ -28,9 +28,19 @@ function bridge_dispatch(cmd, argsjson)
 
 function bridge_dispatch_command(cmd, args)
 {
-	// Only these work from the home screen
+	if (cmd = "project_new")
+		return bridge_cmd_project_new(args)
+	if (cmd = "project_open")
+		return bridge_cmd_project_open(args)
+
+	// Only the commands above work from the home screen
 	if (window_state = "startup")
 		return bridge_error("no_project", "No project is open. Call project_new or project_open first")
+
+	switch (cmd)
+	{
+		case "project_save": return bridge_cmd_project_save(args)
+	}
 
 	return bridge_error("unknown_command", "Unknown command " + cmd)
 }
@@ -108,11 +118,11 @@ function bridge_cmd_get_status(args)
 
 	result[?"project_name"] = project_name
 	result[?"project_file"] = project_file
-	result[?"project_changed"] = project_changed
+	result[?"project_changed"] = (project_changed > 0) // Booleans are plain numbers in the app, send real booleans
 	result[?"tempo"] = project_tempo
 	result[?"frame"] = timeline_marker
 	result[?"timeline_length"] = timeline_length
-	result[?"playing"] = timeline_playing
+	result[?"playing"] = (timeline_playing > 0)
 	result[?"object_count"] = instance_number(obj_timeline)
 	result[?"undo_steps"] = history_amount - history_pos
 	result[?"redo_steps"] = history_pos

@@ -6,7 +6,8 @@ Controls a running Mine-imator through a local socket built into this fork.
 
 1. Build once: `mcp/scripts/build.ps1` (needs the toolchain from `BUILD.md`). The app lands in `install/Mine-imator/`.
 2. `cd mcp && npm install`
-3. Start an MCP client in this repo; `.mcp.json` registers the `mineimator` server. Call `launch_app` first, or start `install/Mine-imator/Mine-imator.exe --bridge` yourself.
+3. Optional: put the build into an existing Mine-imator install with `mcp/scripts/deploy.ps1 -Target <install folder>` (or set `MINEIMATOR_HOME`). It copies only the program files that changed and leaves projects, skins, settings, the upgrade key and the recent list alone. Then set `MINEIMATOR_EXE` to that install's `Mine-imator.exe` so `launch_app` starts it.
+4. Start an MCP client in this repo; `.mcp.json` registers the `mineimator` server. Call `launch_app` first, or start `install/Mine-imator/Mine-imator.exe --bridge` yourself.
 
 The bridge listens on `127.0.0.1:41234` and is closed until you ask for it, in one of three ways:
 

@@ -42,6 +42,13 @@ function bridge_dispatch_command(cmd, args)
 		case "project_save": return bridge_cmd_project_save(args)
 		case "get_scene": return bridge_cmd_get_scene(args)
 		case "get_object": return bridge_cmd_get_object(args)
+		case "create_object": return bridge_cmd_create_object(args)
+		case "remove_object": return bridge_cmd_remove_object(args)
+		case "rename_object": return bridge_cmd_rename_object(args)
+		case "set_parent": return bridge_cmd_set_parent(args)
+		case "select": return bridge_cmd_select(args)
+		case "undo": return bridge_cmd_undo(args)
+		case "redo": return bridge_cmd_redo(args)
 	}
 
 	return bridge_error("unknown_command", "Unknown command " + cmd)

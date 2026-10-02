@@ -5,14 +5,16 @@
 function bridge_cmd_project_new(args)
 {
 	var name, dirname, fn;
-	name = bridge_arg(args, "name", "")
-	if (!is_string(name) || name = "")
+	if (!is_string(bridge_arg(args, "name", "")) || bridge_arg(args, "name", "") = "")
 		return bridge_error("bad_args", "name must be a non-empty string")
+	
+	// Plain strings, so the app's typed variables do not widen to variants
+	name = string(bridge_arg(args, "name", ""))
 
 	if (project_changed && !bridge_arg(args, "discard", false))
 		return bridge_error("unsaved_changes", "The open project has unsaved changes. Save it first or pass discard: true")
 
-	dirname = bridge_arg(args, "folder", setting_project_folder + filename_get_valid(name))
+	dirname = string(bridge_arg(args, "folder", setting_project_folder + filename_get_valid(name)))
 	fn = dirname + "/" + filename_get_valid(name) + ".miproject"
 	if (file_exists_lib(fn))
 		return bridge_error("already_exists", "A project already exists at " + fn)
@@ -42,9 +44,12 @@ function bridge_cmd_project_new(args)
 function bridge_cmd_project_open(args)
 {
 	var fn, prevstate;
-	fn = bridge_arg(args, "path", "")
-	if (!is_string(fn) || fn = "" || !file_exists_lib(fn))
-		return bridge_error("not_found", "No project file at " + string(fn))
+	if (!is_string(bridge_arg(args, "path", "")))
+		return bridge_error("bad_args", "path must be a string")
+	
+	fn = string(bridge_arg(args, "path", ""))
+	if (fn = "" || !file_exists_lib(fn))
+		return bridge_error("not_found", "No project file at " + fn)
 
 	// Archives and legacy formats can ask questions in dialogs
 	if (filename_ext(fn) != ".miproject")

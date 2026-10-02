@@ -94,6 +94,7 @@ function bridge_cmd_get_object(args)
 
 	result = bridge_tl_summary(tl)
 	ds_map_add_map(result, "values", bridge_values_map(tl, tl.value))
+	ds_map_add_map(result, "settings", bridge_settings_map(tl))
 
 	keyframes = ds_list_create()
 	for (var k = 0; k < ds_list_size(tl.keyframe_list); k++)

@@ -16,7 +16,7 @@ test("tool names and bridge commands are unique and every tool is documented", (
 
 test("every bridge command has a tool", () => {
   const commands = ["get_status", "project_new", "project_open", "project_save", "get_scene", "get_object",
-    "create_object", "remove_object", "rename_object", "set_parent", "select", "undo", "redo",
+    "create_object", "remove_object", "rename_object", "set_parent", "select", "set_object_settings", "list_names", "undo", "redo",
     "set_frame", "set_values", "set_keyframes", "remove_keyframes", "move_keyframes",
     "set_work_camera", "play", "stop", "screenshot", "export_image", "export_movie", "set_background"];
   assert.deepEqual(tools.map((t) => t.cmd).sort(), commands.sort());
@@ -50,6 +50,12 @@ test("input shapes reject bad input and accept good input", () => {
   assert.ok(z.object(tool("export_movie").shape).safeParse({ path: "C:/v/a.mp4", start_frame: 0, end_frame: 48 }).success);
   assert.ok(!z.object(tool("export_movie").shape).safeParse({ path: "C:/v/a.mp4", frame_rate: 0 }).success);
   assert.ok(!z.object(tool("undo").shape).safeParse({ steps: 0 }).success);
+  const settings = z.object(tool("set_object_settings").shape);
+  assert.ok(settings.safeParse({ id: "a", settings: { hidden: true, pivot: [0, 0, 16] } }).success);
+  assert.ok(settings.safeParse({ id: "a", settings: { pivot: null } }).success);
+  assert.ok(!settings.safeParse({ id: "a", settings: { no_such_setting: true } }).success);
+  assert.ok(!settings.safeParse({ id: "a", settings: { pivot: [1, 2] } }).success);
+  assert.ok(!z.object(tool("list_names").shape).safeParse({ kind: "sounds" }).success);
 });
 
 test("describeError explains bridge and connection failures", () => {

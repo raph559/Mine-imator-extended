@@ -55,7 +55,7 @@ export const tools = [
   {
     name: "get_object",
     cmd: "get_object",
-    description: "Read one object: its values at the current frame and every keyframe with its values. Position, rotation and scale are always listed, other values only when they differ from the default.",
+    description: "Read one object: its settings, its values at the current frame and every keyframe with its values. Position, rotation and scale are always listed, other values only when they differ from the default.",
     shape: { id },
   },
   {
@@ -65,7 +65,7 @@ export const tools = [
     shape: {
       type: z.enum(["char", "character", "item", "block", "text", "cube", "cone", "cylinder", "sphere", "surface", "camera", "spotlight", "pointlight", "folder"]),
       name: z.string().optional().describe("Name shown in the timeline"),
-      model: z.string().optional().describe("Character model name, e.g. steve, alex, zombie. Characters only"),
+      model: z.string().optional().describe("Character model name, e.g. human, zombie, skeleton, creeper (list_names kind character). Default human. Characters only"),
       skin: z.string().optional().describe("Full path of a skin PNG. Characters only"),
     },
     paths: ["skin"],
@@ -93,6 +93,48 @@ export const tools = [
     cmd: "select",
     description: "Select exactly these objects in the app, deselecting everything else.",
     shape: { ids: z.array(z.string().min(1)) },
+  },
+  {
+    name: "set_object_settings",
+    cmd: "set_object_settings",
+    description: "Change settings of one object that are not keyframed: visibility, lock, rotation pivot, text, which item or block it shows, render options and what it inherits from its parent. Only the given settings change, and nothing is applied if one is wrong. Each changed setting is an undo step (a pivot can be up to four); the result gives undo_steps and the settings afterwards. pivot is in the object's own units and is the point of the model that sits at the object's position and that it rotates and scales around: setting it shifts the model, so add the same amount to its position to keep it in place (to spin a standing character around his middle: pivot [0, 0, 16] and pos_z 16).",
+    shape: {
+      id,
+      settings: z
+        .object({
+          hidden: z.boolean(),
+          locked: z.boolean(),
+          ghost: z.boolean(),
+          pivot: z.array(z.number()).length(3).nullable().describe("[x, y, z], or null for the default"),
+          text: z.string().describe("Text objects only"),
+          item: z.string().describe("Item objects only. A name from list_names kind item"),
+          block: z.string().describe("Block objects only. A name from list_names kind block"),
+          shadows: z.boolean(),
+          glow: z.boolean(),
+          backfaces: z.boolean(),
+          fog: z.boolean(),
+          ssao: z.boolean(),
+          texture_filtering: z.boolean(),
+          texture_blur: z.boolean(),
+          inherit_position: z.boolean(),
+          inherit_rotation: z.boolean(),
+          inherit_scale: z.boolean(),
+          inherit_alpha: z.boolean(),
+          inherit_color: z.boolean(),
+          inherit_visibility: z.boolean(),
+          inherit_bend: z.boolean(),
+          inherit_texture: z.boolean(),
+        })
+        .partial()
+        .strict()
+        .describe("Setting name to value"),
+    },
+  },
+  {
+    name: "list_names",
+    cmd: "list_names",
+    description: "List the names Mine-imator accepts for items, blocks or character models, for create_object and set_object_settings.",
+    shape: { kind: z.enum(["item", "block", "character"]) },
   },
   {
     name: "undo",

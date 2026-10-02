@@ -19,7 +19,7 @@ A small dot on the MCP button shows that it is running. Toasts announce when it 
 
 ## Tools
 
-`launch_app`, `get_status`, `project_new`, `project_open`, `project_save`, `get_scene`, `get_object`, `create_object`, `remove_object`, `rename_object`, `set_parent`, `select_objects`, `undo`, `redo`, `set_frame`, `set_values`, `set_keyframes`, `remove_keyframes`, `move_keyframe`, `set_work_camera`, `play`, `stop`, `screenshot`, `export_image`, `export_movie`, `set_background`.
+`launch_app`, `get_status`, `project_new`, `project_open`, `project_save`, `get_scene`, `get_object`, `create_object`, `remove_object`, `rename_object`, `set_parent`, `select_objects`, `set_object_settings`, `list_names`, `undo`, `redo`, `set_frame`, `set_values`, `set_keyframes`, `remove_keyframes`, `move_keyframe`, `set_work_camera`, `play`, `stop`, `screenshot`, `export_image`, `export_movie`, `set_background`.
 
 Every change goes through the app's own actions, so it shows up live and Ctrl+Z undoes it.
 
@@ -33,7 +33,7 @@ Conventions worth knowing: Z is up and 16 units are one block. A new character f
 ## Tests
 
 - `npm test`: unit tests, no app needed.
-- `npm run test:app`: integration tests against the real app, on port 41235. One instance is started and shared by every file in `test/app`; the files in `test/app/isolated` then start their own, because they test launch conditions. A full run opens the app three times. Test projects are created under `%TEMP%/mi-bridge-tests` and deleted when the run ends, and the app's recent-project list and settings are put back as they were. If a run is killed before it can clean up, the next run does it first. A single file can also be run on its own (`node --test test/app/04-objects.test.mjs`) and then starts its own instance.
+- `npm run test:app`: integration tests against the real app, on port 41235. The app is started with `--background`, which keeps its window off screen and never takes the focus, so a run does not disturb whoever is using the computer. One instance is started and shared by every file in `test/app`; the files in `test/app/isolated` then start their own, because they test launch conditions. A full run opens the app three times. Test projects are created under `%TEMP%/mi-bridge-tests` and deleted when the run ends, and the app's recent-project list and settings are put back as they were. If a run is killed before it can clean up, the next run does it first. A single file can also be run on its own (`node --test test/app/04-objects.test.mjs`) and then starts its own instance.
 
 ## Protocol
 

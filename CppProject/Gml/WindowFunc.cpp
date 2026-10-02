@@ -197,6 +197,9 @@ namespace CppProject
 
 	void window_main_restore(VarType rect, BoolType maximize)
 	{
+		if (App->background) // Keep the background window where it is
+			return;
+
 		if (rect == null_)
 			App->mainWindow->Maximize();
 

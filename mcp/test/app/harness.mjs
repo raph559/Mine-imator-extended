@@ -51,9 +51,13 @@ export function cleanupTestData() {
   }
 }
 
-/** Spawns the custom build on TEST_PORT without waiting for it. */
+/**
+ * Spawns the custom build on TEST_PORT without waiting for it.
+ * Always in background mode: its window is off screen and never takes the focus,
+ * so a test run does not disturb whoever is using the computer.
+ */
 export function spawnApp({ args = ["--bridge"], env = {} } = {}) {
-  return spawn(exe, args, {
+  return spawn(exe, [...args, "--background"], {
     cwd: path.dirname(exe),
     stdio: "ignore",
     env: { ...process.env, MINEIMATOR_BRIDGE_PORT: String(TEST_PORT), ...env },

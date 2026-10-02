@@ -21,6 +21,7 @@ namespace CppProject
 
 		// Show window
 		void ShowNormal();
+		void ShowBackground(); // Shown off screen without activation, see AppHandler::background
 		void Maximize();
 		void UpdateSize();
 

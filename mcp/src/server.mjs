@@ -2,6 +2,7 @@
 import { readFile } from "node:fs/promises";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { z } from "zod";
 import { BridgeClient } from "./bridge-client.mjs";
 import { launchApp } from "./launcher.mjs";
 import { describeError, prepareArgs, tools } from "./tools.mjs";
@@ -31,12 +32,12 @@ for (const tool of tools) {
 server.registerTool(
   "launch_app",
   {
-    description: "Start the Mine-imator custom build with the bridge enabled and wait until it is ready. Does nothing if it is already running. Call this first when other tools report that Mine-imator is not running.",
-    inputSchema: {},
+    description: "Start the Mine-imator custom build with the bridge enabled and wait until it is ready. Does nothing if it is already running. Call this first when other tools report that Mine-imator is not running. With background true the window is kept off screen and never takes the focus, for working while the person is busy with something else; they cannot see or use the app in that mode.",
+    inputSchema: { background: z.boolean().optional().describe("Start invisibly, without taking the focus. Default false") },
   },
-  async () => {
+  async ({ background }) => {
     try {
-      return { content: [text(await launchApp(bridge, { port }))] };
+      return { content: [text(await launchApp(bridge, { port, background }))] };
     } catch (err) {
       return failure(err);
     }

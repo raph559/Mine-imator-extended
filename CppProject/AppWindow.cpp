@@ -20,6 +20,14 @@ namespace CppProject
 
 	AppWindow::AppWindow(IntType id) : id(id)
 	{
+		// Background mode: never take the focus and stay out of the taskbar.
+		// Set before the native window exists, changing flags later would recreate it.
+		if (App->background)
+		{
+			QWidget::setWindowFlags(QWidget::windowFlags() | Qt::Tool | Qt::WindowDoesNotAcceptFocus);
+			QWidget::setAttribute(Qt::WA_ShowWithoutActivating, true);
+		}
+
 	#if API_OPENGL
 		glWidget = new GLWidget;
 		QMainWindow::setCentralWidget(glWidget);
@@ -82,8 +90,21 @@ namespace CppProject
 	#endif
 	}
 
+	void AppWindow::ShowBackground()
+	{
+		// A normal sized window far off every screen: it renders, but is never seen or focused
+		QMainWindow::setGeometry(QRect(-30000, -30000, 1280, 800));
+		QMainWindow::show();
+	#if API_OPENGL
+		glWidget->widgetRender = true;
+	#endif
+	}
+
 	void AppWindow::ShowNormal()
 	{
+		if (App->background)
+			return ShowBackground();
+
 		QMainWindow::showNormal();
 	#if API_OPENGL
 		glWidget->widgetRender = true;
@@ -92,6 +113,9 @@ namespace CppProject
 
 	void AppWindow::Maximize()
 	{
+		if (App->background)
+			return ShowBackground();
+
 	#if API_OPENGL
 		glWidget->hide(); // Mac OS fix
 		QMainWindow::showMaximized();
@@ -105,6 +129,12 @@ namespace CppProject
 	{
 		if (newSize == QSize(0, 0))
 			return;
+
+		if (App->background)
+		{
+			newSize = { 0, 0 };
+			return ShowBackground();
+		}
 
 		newSize.rwidth() *= App->scale;
 		newSize.rheight() *= App->scale;

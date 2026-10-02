@@ -55,6 +55,7 @@ namespace CppProject
 			handler = this;
 			new QApplication(argc, argv);
 			QCoreApplication::setApplicationName(PROJECT_NAME);
+			background = qApp->arguments().contains("--background");
 
 			// Initialize string table
 			StringType::AddQThread(QThread::currentThread());
@@ -271,7 +272,10 @@ namespace CppProject
 		if (!mainWindow)
 			mainWindow = win;
 
-		if (rect == QRect()) // Show minimized if no rect given
+		if (background)
+			win->ShowBackground();
+
+		else if (rect == QRect()) // Show minimized if no rect given
 			win->showMinimized();
 		
 		else if (from) // Show relative to a window

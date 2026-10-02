@@ -10,7 +10,7 @@ export function defaultExe() {
 }
 
 /** Starts the custom build with the bridge unless it already answers, then waits until it is ready. */
-export async function launchApp(bridge, { port, exe = defaultExe(), timeoutMs = 120000 }) {
+export async function launchApp(bridge, { port, exe = defaultExe(), timeoutMs = 120000, background = false }) {
   const ready = async () => {
     try {
       const status = await bridge.call("get_status");
@@ -25,7 +25,8 @@ export async function launchApp(bridge, { port, exe = defaultExe(), timeoutMs = 
   if (already) return { ...already, launched: false };
 
   if (!existsSync(exe)) throw new Error(`Mine-imator custom build not found at ${exe}. Set MINEIMATOR_EXE.`);
-  spawn(exe, ["--bridge"], {
+  // In background mode the window is off screen and never takes the focus
+  spawn(exe, background ? ["--bridge", "--background"] : ["--bridge"], {
     cwd: path.dirname(exe),
     detached: true,
     stdio: "ignore",

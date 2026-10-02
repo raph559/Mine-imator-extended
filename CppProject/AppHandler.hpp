@@ -81,6 +81,7 @@ namespace CppProject
 
 		QBasicTimer stepTimer;
 		BoolType blocked = false;
+		BoolType background = false; // --background: windows are shown off screen and never take the focus
 
 		Timer randomizeTimer;
 		IntType startTime = 0;

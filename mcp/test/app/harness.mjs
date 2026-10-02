@@ -31,7 +31,9 @@ const backupOf = (file) => file + ".test-backup";
  * next run finds them and finishes the job first.
  */
 export function snapshotAppData() {
-  cleanupTestData();
+  // Backups still on disk mean an earlier run was killed mid-way: undo what it left.
+  // Without them there is nothing to recover, and a test file may already have made its folders.
+  if (PRESERVED.some((name) => existsSync(backupOf(path.join(dataDir, name))))) cleanupTestData();
   for (const name of PRESERVED) {
     const file = path.join(dataDir, name);
     if (existsSync(file)) copyFileSync(file, backupOf(file));

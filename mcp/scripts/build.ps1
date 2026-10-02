@@ -8,5 +8,12 @@ Get-Process | Where-Object { $_.Path -eq $exe } | Stop-Process -Force
 
 if (-not $env:DEV_DIR) { $env:DEV_DIR = [Environment]::GetEnvironmentVariable("DEV_DIR", "Machine") }
 $env:Path = "C:\Strawberry\c\bin;C:\Strawberry\perl\site\bin;C:\Strawberry\perl\bin;" + $env:Path
-& powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "Setup.ps1") Release
+
+# When a GML change makes CppGen produce one generated file more or fewer, the first
+# build still uses the old file list and fails; the second one has refreshed it.
+foreach ($attempt in 1, 2) {
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $repo "Setup.ps1") Release
+    if ($LASTEXITCODE -eq 0) { break }
+    if ($attempt -eq 1) { Write-Host "Build failed, retrying once with the refreshed file list" }
+}
 exit $LASTEXITCODE

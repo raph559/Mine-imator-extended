@@ -1,0 +1,14 @@
+{
+  "name": "mineimator-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test \"test/unit/*.test.mjs\"",
+    "test:app": "node --test --test-concurrency=1 \"test/app/*.test.mjs\""
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.31.0",
+    "zod": "^4.6.5"
+  }
+}

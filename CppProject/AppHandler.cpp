@@ -1,5 +1,6 @@
 #include "AppHandler.hpp"
 #include "AppWindow.hpp"
+#include "Bridge/Bridge.hpp"
 
 #include "Asset/Font.hpp"
 #include "Asset/Shader.hpp"
@@ -92,20 +93,32 @@ namespace CppProject
 			omp_set_num_threads(std::min(omp_get_max_threads(), OPENMP_MAX_THREADS));
 			DEBUG("OpenMP max threads: " + NumStr(omp_get_max_threads()));
 
+			// Automation bridge, only when asked for
+			const QString bridgePort = qEnvironmentVariable("MINEIMATOR_BRIDGE_PORT");
+			const bool bridgeEnabled = (qApp->arguments().contains("--bridge") || !bridgePort.isEmpty());
+
 			// Create temporary folder
 		#if OS_WINDOWS
 			gmlGlobal::game_save_id = QStandardPaths::standardLocations(QStandardPaths::AppDataLocation)[0] + "/";
 		#else
 			gmlGlobal::game_save_id = QDir::tempPath() + "/" + StringType(PROJECT_NAME) + "_tmp/";
 		#endif
+			if (bridgeEnabled) // Own folder, so it can run next to a normal instance
+				gmlGlobal::game_save_id = gmlGlobal::game_save_id + "Bridge/";
 			if (QDir(gmlGlobal::game_save_id).exists())
 				DEBUG("Found temporary folder " + gmlGlobal::game_save_id);
-			else if (QDir().mkdir(gmlGlobal::game_save_id))
+			else if (QDir().mkpath(gmlGlobal::game_save_id))
 				DEBUG("Created temporary folder " + gmlGlobal::game_save_id);
 			else
 				FATAL("Could not create temporary folder " + gmlGlobal::game_save_id);
 
 			DEBUG("Minecraft saves: " + world_import_get_saves_dir());
+
+			if (bridgeEnabled)
+			{
+				Bridge::instance = new Bridge;
+				Bridge::instance->Start(bridgePort.toUShort() > 0 ? bridgePort.toUShort() : 41234);
+			}
 
 			// Set globals
 			gmlGlobal::room_speed = 60;
@@ -335,6 +348,10 @@ namespace CppProject
 					new app;
 					app_event_create(global::_app->id);
 				}
+
+				// Run queued automation commands before the step
+				if (win == mainWindow && Bridge::instance)
+					Bridge::instance->ProcessPending();
 
 				app_event_step(global::_app->id);
 				app_event_draw(global::_app->id);

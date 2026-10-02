@@ -19,7 +19,9 @@ Since then: phase 1 (object settings, name lists), phase 2 (project settings
 and the full background) and phase 3 (duplicate, copy keyframes and poses,
 view camera, markers, loop region) and phase 4 (skins from files and by
 player name, custom models, scenery files, images as shape textures, resource
-listing and removal) are done. 42 tools. Bridge commands no longer let the app
+listing and removal) and phase 5 (sounds, audio objects, sound in exported
+movies, particle spawners from presets with their spawn settings, resource
+values such as sound_obj in keyframes) are done. 43 tools. Bridge commands no longer let the app
 open message boxes: errors come back in the reply, questions are answered no.
 
 ## Phases
@@ -50,7 +52,9 @@ use reorders priorities.
   mid-drag.
 - Exported and screenshot images are returned in full, with no size cap.
 - A project with missing model files can still raise a dialog on open.
-- Audio in exported movies is untested.
+- Particle types (the dozens of per-type options in the app's particle editor)
+  are not exposed: spawners come from presets, and custom presets can be made
+  in the app and passed to create_object by path.
 - The design spec in `specs/` still describes the bridge as launch-flag only.
 - World import (a box of blocks from a Minecraft save) is not exposed: there is
   no world on the development machine to test it with. The call sequence is

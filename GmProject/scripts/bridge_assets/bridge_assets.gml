@@ -558,6 +558,8 @@ function bridge_pending_poll()
 		res = bridge_skin_poll()
 	else if (bridge_pending_kind = "scenery")
 		res = bridge_scenery_poll()
+	else if (bridge_pending_kind = "sound")
+		res = bridge_sound_poll()
 	else
 		res = bridge_export_poll()
 	bridge_quiet = false

@@ -107,6 +107,8 @@ function bridge_settings_map(tl)
 		m[?"skin"] = bridge_res_id(tl.temp.model_tex)
 	if (type_is_shape(tl.type) && tl.temp != null)
 		m[?"texture"] = bridge_res_id(tl.temp.shape_tex)
+	if (tl.type = e_tl_type.PARTICLE_SPAWNER && tl.temp != null)
+		bridge_particle_settings_add(m, tl.temp)
 
 	return m
 }
@@ -170,6 +172,21 @@ function bridge_setting_error(tl, name, val)
 			return ""
 		}
 
+		case "spawn_continuous":
+		case "spawn_amount":
+		case "spawn_region":
+		case "spawn_sphere_radius":
+		case "spawn_cube_size":
+		case "spawn_box_size":
+		case "lifetime":
+		case "max_particles":
+		case "remove_at_animation_end":
+		{
+			if (tl.type != e_tl_type.PARTICLE_SPAWNER || tl.temp = null)
+				return string(name) + " can only be set on a particle spawner"
+			return bridge_particle_setting_error(name, val)
+		}
+
 		case "texture":
 		{
 			if (!type_is_shape(tl.type) || tl.temp = null)
@@ -212,6 +229,8 @@ function bridge_setting_apply(tl, name, val)
 
 	if (name = "texture")
 		return bridge_setting_apply_texture(tl, val)
+	if (tl.type = e_tl_type.PARTICLE_SPAWNER && bridge_particle_setting_error(name, val) = "")
+		return bridge_particle_setting_apply(tl.temp, name, val)
 
 	switch (name)
 	{
@@ -369,8 +388,10 @@ function bridge_cmd_list_names(args)
 		source = bench_settings.block_list.list
 	else if (kind = "character")
 		source = bench_settings.char_list.list
+	else if (kind = "particles")
+		return bridge_particle_preset_names()
 	else
-		return bridge_error("bad_args", "kind must be item, block or character")
+		return bridge_error("bad_args", "kind must be item, block, character or particles")
 
 	names = ds_list_create()
 	for (var i = 0; i < ds_list_size(source); i++)

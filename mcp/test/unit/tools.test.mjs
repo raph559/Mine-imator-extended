@@ -20,7 +20,7 @@ test("every bridge command has a tool", () => {
     "set_frame", "set_values", "set_keyframes", "remove_keyframes", "move_keyframes",
     "set_work_camera", "play", "stop", "screenshot", "export_image", "export_movie", "set_background", "get_project_settings", "set_project_settings",
     "duplicate_object", "copy_keyframes", "set_view_camera", "set_marker", "remove_marker", "set_loop",
-    "set_skin", "import_model", "import_scenery", "import_image", "list_resources", "remove_resource"];
+    "set_skin", "import_model", "import_scenery", "import_image", "list_resources", "remove_resource", "import_sound"];
   assert.deepEqual(tools.map((t) => t.cmd).sort(), commands.sort());
 });
 
@@ -75,6 +75,9 @@ test("input shapes reject bad input and accept good input", () => {
   assert.ok(skin.safeParse({ id: "a", player: "Notch_2" }).success);
   assert.ok(!skin.safeParse({ id: "a", player: "not a name" }).success);
   assert.ok(settings.safeParse({ id: "a", settings: { texture: null } }).success);
+  assert.ok(settings.safeParse({ id: "a", settings: { spawn_region: "box", spawn_box_size: [8, 8, 8], lifetime: null } }).success);
+  assert.ok(!settings.safeParse({ id: "a", settings: { spawn_region: "path" } }).success);
+  assert.ok(z.object(tool("create_object").shape).safeParse({ type: "particles", preset: "Rain" }).success);
   const background = z.object(tool("set_background").shape);
   assert.ok(background.safeParse({ fog_show: false, sky_color: "#102030", sky_moon_phase: 3 }).success);
   assert.ok(!background.safeParse({ sky_color: "blue" }).success);

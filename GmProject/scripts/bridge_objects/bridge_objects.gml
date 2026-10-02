@@ -32,7 +32,7 @@ function bridge_bench_set_skin(fn)
 
 function bridge_cmd_create_object(args)
 {
-	var typename, tltype, model, skin, name, prevtype, prevani, placenew, obj, tl;
+	var typename, tltype, model, skin, name, preset, prevtype, prevani, placenew, obj, tl;
 	typename = bridge_arg(args, "type", "")
 	if (!is_string(typename))
 		return bridge_error("bad_args", "type must be a string")
@@ -42,16 +42,26 @@ function bridge_cmd_create_object(args)
 	tltype = ds_list_find_index(tl_type_name_list, typename)
 	if (tltype != e_tl_type.CHARACTER && tltype != e_tl_type.ITEM && tltype != e_tl_type.BLOCK && tltype != e_tl_type.TEXT &&
 		tltype != e_tl_type.CUBE && tltype != e_tl_type.CONE && tltype != e_tl_type.CYLINDER && tltype != e_tl_type.SPHERE && tltype != e_tl_type.SURFACE &&
-		tltype != e_tl_type.CAMERA && tltype != e_tl_type.SPOT_LIGHT && tltype != e_tl_type.POINT_LIGHT && tltype != e_tl_type.FOLDER)
-		return bridge_error("bad_args", "Unsupported type. Use char, item, block, text, cube, cone, cylinder, sphere, surface, camera, spotlight, pointlight or folder")
+		tltype != e_tl_type.CAMERA && tltype != e_tl_type.SPOT_LIGHT && tltype != e_tl_type.POINT_LIGHT && tltype != e_tl_type.FOLDER &&
+		tltype != e_tl_type.AUDIO && tltype != e_tl_type.PARTICLE_SPAWNER)
+		return bridge_error("bad_args", "Unsupported type. Use char, item, block, text, cube, cone, cylinder, sphere, surface, camera, spotlight, pointlight, folder, audio or particles")
 
-	if (!is_string(bridge_arg(args, "model", "")) || !is_string(bridge_arg(args, "skin", "")) || !is_string(bridge_arg(args, "name", "")))
-		return bridge_error("bad_args", "model, skin and name must be strings")
+	if (!is_string(bridge_arg(args, "model", "")) || !is_string(bridge_arg(args, "skin", "")) || !is_string(bridge_arg(args, "name", "")) || !is_string(bridge_arg(args, "preset", "")))
+		return bridge_error("bad_args", "model, skin, name and preset must be strings")
 	
 	// Plain strings, so the app's typed variables and parameters do not widen to variants
 	model = string(bridge_arg(args, "model", ""))
 	skin = string(bridge_arg(args, "skin", ""))
 	name = string(bridge_arg(args, "name", ""))
+	preset = string(bridge_arg(args, "preset", ""))
+	if (preset != "")
+	{
+		if (tltype != e_tl_type.PARTICLE_SPAWNER)
+			return bridge_error("bad_args", "preset is for particles only")
+		preset = bridge_particle_preset_file(preset)
+		if (preset = "")
+			return bridge_error("not_found", "Unknown particle preset " + string(bridge_arg(args, "preset", "")) + ", see list_names kind particles")
+	}
 	if (model != "" && (tltype != e_tl_type.CHARACTER || ds_list_find_index(bench_settings.char_list.list, model) < 0))
 		return bridge_error("not_found", "Unknown character model " + model)
 	if (skin != "" && (tltype != e_tl_type.CHARACTER || !file_exists_lib(skin)))
@@ -79,6 +89,8 @@ function bridge_cmd_create_object(args)
 			action_bench_model_name(model)
 		if (skin != "")
 			bridge_bench_set_skin(skin)
+		if (preset != "")
+			action_bench_particles(preset)
 	}
 
 	// Create without the interactive mouse placement

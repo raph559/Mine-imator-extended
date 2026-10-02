@@ -33,6 +33,14 @@ function bridge_tl_summary(tl)
 
 function bridge_value_out(vid, val)
 {
+	// Resources and objects by id, null for none
+	if (tl_value_is_texture(vid) || tl_value_is_obj(vid))
+	{
+		if (!is_real(val) || val <= 0 || !instance_exists(val))
+			return undefined
+		return val.save_id
+	}
+
 	if (tl_value_is_color(vid))
 		return "#" + color_to_hex(val)
 

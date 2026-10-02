@@ -62,12 +62,13 @@ export const tools = [
   {
     name: "create_object",
     cmd: "create_object",
-    description: "Create an object at the origin and select it. Returns its id. Characters come with body part objects (see get_scene).",
+    description: "Create an object at the origin and select it. Returns its id. Characters come with body part objects (see get_scene). An audio object plays sounds: set sound_obj (a sound from import_sound) and sound_volume on its keyframes. A particles object is a spawner made from a preset such as Rain, Smoke or high_fire; its spawn settings are in set_object_settings and spawning is keyframed with the spawn value.",
     shape: {
-      type: z.enum(["char", "character", "item", "block", "text", "cube", "cone", "cylinder", "sphere", "surface", "camera", "spotlight", "pointlight", "folder"]),
+      type: z.enum(["char", "character", "item", "block", "text", "cube", "cone", "cylinder", "sphere", "surface", "camera", "spotlight", "pointlight", "folder", "audio", "particles"]),
       name: z.string().optional().describe("Name shown in the timeline"),
       model: z.string().optional().describe("Character model name, e.g. human, zombie, skeleton, creeper (list_names kind character). Default human. Characters only"),
       skin: z.string().optional().describe("Full path of a skin PNG. Characters only"),
+      preset: z.string().optional().describe("Particles only: a preset name (list_names kind particles), or the full path of a .miparticles file"),
     },
     paths: ["skin"],
   },
@@ -98,7 +99,7 @@ export const tools = [
   {
     name: "set_object_settings",
     cmd: "set_object_settings",
-    description: "Change settings of one object that are not keyframed: visibility, lock, rotation pivot, text, which item or block it shows, a shape's texture, render options and what it inherits from its parent. Only the given settings change, and nothing is applied if one is wrong. Each changed setting is an undo step (a pivot can be up to four); the result gives undo_steps and the settings afterwards. pivot is in the object's own units and is the point of the model that sits at the object's position and that it rotates and scales around: setting it shifts the model, so add the same amount to its position to keep it in place (to spin a standing character around his middle: pivot [0, 0, 16] and pos_z 16).",
+    description: "Change settings of one object that are not keyframed: visibility, lock, rotation pivot, text, which item or block it shows, a shape's texture, render options and what it inherits from its parent. Only the given settings change, and nothing is applied if one is wrong. Each changed setting is an undo step (a pivot can be up to four, a particle limit two); the result gives undo_steps and the settings afterwards. pivot is in the object's own units and is the point of the model that sits at the object's position and that it rotates and scales around: setting it shifts the model, so add the same amount to its position to keep it in place (to spin a standing character around his middle: pivot [0, 0, 16] and pos_z 16).",
     shape: {
       id,
       settings: z
@@ -111,6 +112,15 @@ export const tools = [
           item: z.string().describe("Item objects only. A name from list_names kind item"),
           block: z.string().describe("Block objects only. A name from list_names kind block"),
           texture: z.string().nullable().describe("Shapes only. Id of an image from import_image, or null for none"),
+          spawn_continuous: z.boolean().describe("Particles only: spawn all the time (true) or in bursts when spawn is keyframed on (false)"),
+          spawn_amount: z.number().positive().describe("Particles only: particles per second when continuous, per burst otherwise"),
+          spawn_region: z.enum(["none", "sphere", "cube", "box"]).describe("Particles only: where particles appear around the spawner"),
+          spawn_sphere_radius: z.number().positive().describe("Particles only"),
+          spawn_cube_size: z.number().positive().describe("Particles only"),
+          spawn_box_size: z.array(z.number().positive()).length(3).describe("Particles only: [x, y, z]"),
+          lifetime: z.number().positive().nullable().describe("Particles only: seconds before a particle disappears, or null for no limit"),
+          max_particles: z.number().int().positive().nullable().describe("Particles only: oldest particles disappear above this many, or null for no limit"),
+          remove_at_animation_end: z.boolean().describe("Particles only: remove particles whose sprite animation has ended"),
           shadows: z.boolean(),
           glow: z.boolean(),
           backfaces: z.boolean(),
@@ -135,8 +145,8 @@ export const tools = [
   {
     name: "list_names",
     cmd: "list_names",
-    description: "List the names Mine-imator accepts for items, blocks or character models, for create_object and set_object_settings.",
-    shape: { kind: z.enum(["item", "block", "character"]) },
+    description: "List the names Mine-imator accepts for items, blocks, character models or particle presets, for create_object and set_object_settings.",
+    shape: { kind: z.enum(["item", "block", "character", "particles"]) },
   },
   {
     name: "undo",
@@ -159,11 +169,11 @@ export const tools = [
   {
     name: "set_values",
     cmd: "set_values",
-    description: "Set values of one object at a frame, creating a keyframe there or editing the existing one. One undo step. Value names are lower case: pos_x pos_y pos_z, rot_x rot_y rot_z, sca_x sca_y sca_z, bend_angle_x, alpha, rgb_mul, cam_fov, light_strength and so on (get_object shows the names in use). Colours are \"#RRGGBB\". Set transition (linear, instant, easeinquad, easeoutquad, easeinoutquad, easeinoutcubic, easeoutbounce, ...) to choose the easing from this keyframe to the next. Z is up; 16 units are one block. Rotation is in degrees. For cameras, rot_z is the heading: 0 looks along +Y, 90 along +X, 180 along -Y, and positive rot_x pitches down; a camera looking along +X has +Y on its right. Angles are interpolated numerically, so use -22 rather than 338 to turn the short way. A new character faces +Y. On a character, body or folder, positive rot_x tips the top forward (a front flip is rot_x 0 to 360); on a leg or arm, negative rot_x lifts it forward and positive bend_angle_x bends the knee. Rotation pivots at the object's origin (a character's feet) unless set_object_settings gives it another pivot.",
+    description: "Set values of one object at a frame, creating a keyframe there or editing the existing one. One undo step. Value names are lower case: pos_x pos_y pos_z, rot_x rot_y rot_z, sca_x sca_y sca_z, bend_angle_x, alpha, rgb_mul, cam_fov, light_strength, spawn (particles), sound_volume and so on (get_object shows the names in use). Colours are \"#RRGGBB\". Values that refer to a resource or object take its id, or null for none: sound_obj (a sound from import_sound), texture_obj (an image from import_image, or a camera for a live view), path_obj. Set transition (linear, instant, easeinquad, easeoutquad, easeinoutquad, easeinoutcubic, easeoutbounce, ...) to choose the easing from this keyframe to the next. Z is up; 16 units are one block. Rotation is in degrees. For cameras, rot_z is the heading: 0 looks along +Y, 90 along +X, 180 along -Y, and positive rot_x pitches down; a camera looking along +X has +Y on its right. Angles are interpolated numerically, so use -22 rather than 338 to turn the short way. A new character faces +Y. On a character, body or folder, positive rot_x tips the top forward (a front flip is rot_x 0 to 360); on a leg or arm, negative rot_x lifts it forward and positive bend_angle_x bends the knee. Rotation pivots at the object's origin (a character's feet) unless set_object_settings gives it another pivot.",
     shape: {
       id,
       frame: frame.optional().describe("Frame to keyframe at. Default: the current frame"),
-      values: z.record(z.string(), z.union([z.number(), z.string(), z.boolean()])).describe("Value name to value"),
+      values: z.record(z.string(), z.union([z.number(), z.string(), z.boolean(), z.null()])).describe("Value name to value"),
     },
   },
   {
@@ -172,7 +182,7 @@ export const tools = [
     description: "Set many keyframes in one call: a list of {id, frame, values}, across any objects and frames. Prefer this over repeated set_values when animating. Values follow the same rules as set_values. Every entry is checked first and nothing is applied if one is wrong. Each keyframe is its own undo step; the result's undo_steps is the number to pass to undo to take the whole batch back. The timeline marker is left where it was.",
     shape: {
       keyframes: z
-        .array(z.object({ id, frame, values: z.record(z.string(), z.union([z.number(), z.string(), z.boolean()])) }))
+        .array(z.object({ id, frame, values: z.record(z.string(), z.union([z.number(), z.string(), z.boolean(), z.null()])) }))
         .min(1)
         .describe("Keyframes to set, applied in order"),
     },
@@ -422,6 +432,14 @@ export const tools = [
     description: "Add a PNG or JPEG image to the project as a texture resource. Returns the resource (id, type, name, file, used). Put it on a shape with set_object_settings texture.",
     shape: { path: z.string().min(1).describe("Full path of the image") },
     paths: ["path"],
+  },
+  {
+    name: "import_sound",
+    cmd: "import_sound",
+    description: "Add a WAV, OGG or MP3 file to the project as a sound, and wait until the app has decoded it. Returns the resource. Play it with an audio object (create_object type audio) by setting sound_obj on a keyframe; sound_volume, sound_pitch, sound_start and sound_end tune it. Exported movies include it unless include_audio is false.",
+    shape: { path: z.string().min(1).describe("Full path of the sound file") },
+    paths: ["path"],
+    timeoutMs: 600000,
   },
   {
     name: "list_resources",

@@ -50,7 +50,11 @@ function bridge_values_error(valmap)
 			return "Unknown value name " + string(key)
 
 		if (tl_value_is_texture(vid) || tl_value_is_obj(vid))
-			return string(key) + " refers to a resource and cannot be set through the bridge"
+		{
+			var err = bridge_value_ref_error(vid, key, val);
+			if (err != "")
+				return err
+		}
 		else if (tl_value_is_color(vid))
 		{
 			if (!bridge_is_hex_color(val))
@@ -111,6 +115,8 @@ function bridge_values_apply(tl, frame, valmap)
 		val = valmap[?key]
 		if (tl_value_is_color(vid))
 			val = hex_to_color(val)
+		else if (tl_value_is_texture(vid) || tl_value_is_obj(vid))
+			val = (is_string(val) ? save_id_find(string(val)) : null)
 
 		tl_value_set(vid, val, false)
 		key = ds_map_find_next(valmap, key)
@@ -135,7 +141,7 @@ function bridge_cmd_set_values(args)
 
 	err = bridge_values_error(bridge_arg(args, "values", null))
 	if (err != "")
-		return bridge_error("bad_args", err)
+		return bridge_error((string_pos("Unknown resource", err) > 0 ? "not_found" : "bad_args"), err)
 
 	if (timeline_playing)
 		action_tl_play()
@@ -172,7 +178,7 @@ function bridge_cmd_set_keyframes(args)
 
 		err = bridge_values_error(bridge_arg(entry, "values", null))
 		if (err != "")
-			return bridge_error("bad_args", "keyframes[" + string(i) + "]: " + err)
+			return bridge_error((string_pos("Unknown resource", err) > 0 ? "not_found" : "bad_args"), "keyframes[" + string(i) + "]: " + err)
 	}
 
 	if (timeline_playing)

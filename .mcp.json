@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "mineimator": {
+      "command": "node",
+      "args": ["mcp/src/server.mjs"]
+    }
+  }
+}

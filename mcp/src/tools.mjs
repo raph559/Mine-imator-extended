@@ -115,7 +115,7 @@ export const tools = [
   {
     name: "set_values",
     cmd: "set_values",
-    description: "Set values of one object at a frame, creating a keyframe there or editing the existing one. One undo step. Value names are lower case: pos_x pos_y pos_z, rot_x rot_y rot_z, sca_x sca_y sca_z, bend_angle_x, alpha, rgb_mul, cam_fov, light_strength and so on (get_object shows the names in use). Colours are \"#RRGGBB\". Set transition (linear, instant, easeinquad, easeoutquad, easeinoutquad, easeinoutcubic, easeoutbounce, ...) to choose the easing from this keyframe to the next. Z is up; 16 units are one block.",
+    description: "Set values of one object at a frame, creating a keyframe there or editing the existing one. One undo step. Value names are lower case: pos_x pos_y pos_z, rot_x rot_y rot_z, sca_x sca_y sca_z, bend_angle_x, alpha, rgb_mul, cam_fov, light_strength and so on (get_object shows the names in use). Colours are \"#RRGGBB\". Set transition (linear, instant, easeinquad, easeoutquad, easeinoutquad, easeinoutcubic, easeoutbounce, ...) to choose the easing from this keyframe to the next. Z is up; 16 units are one block. Rotation is in degrees. For cameras, rot_z is the heading: 0 looks along +Y, 90 along +X, 180 along -Y (clockwise seen from above), and positive rot_x pitches down; angles are interpolated numerically, so use -22 rather than 338 to turn the short way. A new character faces -Y.",
     shape: {
       id,
       frame: frame.optional().describe("Frame to keyframe at. Default: the current frame"),

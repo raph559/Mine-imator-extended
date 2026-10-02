@@ -177,8 +177,9 @@ management beyond a skin path, render-settings tuning, multi-window.
 ## Open risks
 
 - Master still reports version 2.0.2 and writes project format 34, the same
-  as the official release, so projects should open in both. Not yet tested by
-  round-tripping a project between the two builds.
+  as the official release, so projects should open in both. Projects saved by the
+  custom build carry the same header (format 34, created_in 2.0.2); opening
+  one in the official app has not been tried yet.
 - Some `action_*` scripts assume mouse/UI context (e.g. `action_bench_create`
   starts interactive placement). Each command must be checked for this and
   call the lower-level function where needed.

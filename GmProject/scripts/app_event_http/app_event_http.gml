@@ -2,6 +2,13 @@
 
 function app_event_http()
 {
+	// Player skin downloaded for the automation bridge
+	if (async_load[?"id"] = bridge_skin_http && async_load[?"status"] < 1)
+	{
+		bridge_skin_http_done(async_load[?"status"], async_load[?"http_status"])
+		return 0
+	}
+	
 	// Check assets
 	if (async_load[?"id"] = http_assets && async_load[?"status"] < 1 && (!dev_mode || dev_mode_check_assets))
 	{

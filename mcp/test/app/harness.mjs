@@ -1,11 +1,13 @@
 import { spawn } from "node:child_process";
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { BridgeClient } from "../../src/bridge-client.mjs";
 
 export const TEST_PORT = 41235;
+// Tests serve player skins on this port; the app asks it instead of the Mine-imator skin service
+export const SKIN_TEST_PORT = 41236;
 export const exe = fileURLToPath(new URL("../../../install/Mine-imator/Mine-imator.exe", import.meta.url));
 export const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -43,6 +45,10 @@ export function snapshotAppData() {
 /** Deletes every test project and puts the app's files back. Call it after the app has stopped. */
 export function cleanupTestData() {
   rmSync(TEST_ROOT, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+  // Player skins the tests downloaded, which the app keeps in its Skins folder
+  const skinsDir = path.join(path.dirname(exe), "Skins");
+  if (existsSync(skinsDir))
+    for (const name of readdirSync(skinsDir)) if (name.startsWith("bridgetest_")) rmSync(path.join(skinsDir, name), { force: true });
   for (const name of PRESERVED) {
     const file = path.join(dataDir, name);
     if (!existsSync(backupOf(file))) continue;
@@ -60,7 +66,12 @@ export function spawnApp({ args = ["--bridge"], env = {} } = {}) {
   return spawn(exe, [...args, "--background"], {
     cwd: path.dirname(exe),
     stdio: "ignore",
-    env: { ...process.env, MINEIMATOR_BRIDGE_PORT: String(TEST_PORT), ...env },
+    env: {
+      ...process.env,
+      MINEIMATOR_BRIDGE_PORT: String(TEST_PORT),
+      MINEIMATOR_BRIDGE_SKIN_URL: `http://127.0.0.1:${SKIN_TEST_PORT}/skin?username=`,
+      ...env,
+    },
   });
 }
 

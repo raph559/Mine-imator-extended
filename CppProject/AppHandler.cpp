@@ -208,7 +208,8 @@ namespace CppProject
 		}
 		catch (const QString& ex)
 		{
-			new ErrorDialog(ex);
+			if (!qApp->arguments().contains("--background")) // The error is in the log; never pop a dialog over whoever is using the computer
+				new ErrorDialog(ex);
 			qApp->exit(1);
 		}
 	}
@@ -369,7 +370,8 @@ namespace CppProject
 			}
 			catch (const QString& ex)
 			{
-				new ErrorDialog(ex);
+				if (!qApp->arguments().contains("--background")) // The error is in the log; never pop a dialog over whoever is using the computer
+					new ErrorDialog(ex);
 				qApp->exit(1);
 			}
 

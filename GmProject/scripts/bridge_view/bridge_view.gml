@@ -265,10 +265,10 @@ function bridge_export_restore()
 		popup_exportimage.high_quality = bridge_saved_image_hq
 }
 
-/// bridge_pending_poll()
+/// bridge_export_poll()
 /// @desc Returns the response map of a command that finishes over several steps, or -1 while it is still running.
 
-function bridge_pending_poll()
+function bridge_export_poll()
 {
 	var result;
 	if (window_state = "export_image" || window_state = "export_movie")

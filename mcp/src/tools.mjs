@@ -98,7 +98,7 @@ export const tools = [
   {
     name: "set_object_settings",
     cmd: "set_object_settings",
-    description: "Change settings of one object that are not keyframed: visibility, lock, rotation pivot, text, which item or block it shows, render options and what it inherits from its parent. Only the given settings change, and nothing is applied if one is wrong. Each changed setting is an undo step (a pivot can be up to four); the result gives undo_steps and the settings afterwards. pivot is in the object's own units and is the point of the model that sits at the object's position and that it rotates and scales around: setting it shifts the model, so add the same amount to its position to keep it in place (to spin a standing character around his middle: pivot [0, 0, 16] and pos_z 16).",
+    description: "Change settings of one object that are not keyframed: visibility, lock, rotation pivot, text, which item or block it shows, a shape's texture, render options and what it inherits from its parent. Only the given settings change, and nothing is applied if one is wrong. Each changed setting is an undo step (a pivot can be up to four); the result gives undo_steps and the settings afterwards. pivot is in the object's own units and is the point of the model that sits at the object's position and that it rotates and scales around: setting it shifts the model, so add the same amount to its position to keep it in place (to spin a standing character around his middle: pivot [0, 0, 16] and pos_z 16).",
     shape: {
       id,
       settings: z
@@ -110,6 +110,7 @@ export const tools = [
           text: z.string().describe("Text objects only"),
           item: z.string().describe("Item objects only. A name from list_names kind item"),
           block: z.string().describe("Block objects only. A name from list_names kind block"),
+          texture: z.string().nullable().describe("Shapes only. Id of an image from import_image, or null for none"),
           shadows: z.boolean(),
           glow: z.boolean(),
           backfaces: z.boolean(),
@@ -380,6 +381,59 @@ export const tools = [
       clear: z.boolean().optional().describe("Remove the region"),
       repeat: z.enum(["off", "repeat", "seamless"]).optional(),
     },
+  },
+  {
+    name: "set_skin",
+    cmd: "set_skin",
+    description: "Give a character (or a special block or custom model) a skin: either a PNG file, or a Minecraft player's skin downloaded by player name (kept in Mine-imator's Skins folder, like the app's Download skin). A body part's id stands for its character. Duplicated objects share their skin. Returns the object id, the skin's resource id and undo_steps (1). get_object shows the skin in settings.skin, null for the model's default.",
+    shape: {
+      id,
+      path: z.string().min(1).describe("Full path of a skin PNG (64x64 or 64x32 for players)").optional(),
+      player: z.string().regex(/^[A-Za-z0-9_]{1,16}$/).optional().describe("Minecraft player name, to download that player's skin"),
+    },
+    paths: ["path"],
+    timeoutMs: 60000,
+  },
+  {
+    name: "import_model",
+    cmd: "import_model",
+    description: "Add a custom .mimodel model (for example made in Blockbench) to the scene as an object, with its texture from the same folder. Its parts become separate objects (part_of is the model's id, part is the part name) that can be posed and animated like a character's limbs. A broken file is refused and nothing is added. Returns the new object.",
+    shape: {
+      path: z.string().min(1).describe("Full path of the .mimodel file"),
+      name: z.string().optional().describe("Name shown in the timeline"),
+    },
+    paths: ["path"],
+  },
+  {
+    name: "import_scenery",
+    cmd: "import_scenery",
+    description: "Add a building or terrain saved as a .schematic, .nbt (structure block) or .blocks file to the scene as a scenery object, and wait until the app has built it. Mine-imator ships some under its Schematics folder. Returns the new object and its size in blocks [x, y, z]. A broken file is refused and nothing is added.",
+    shape: {
+      path: z.string().min(1).describe("Full path of the .schematic, .nbt or .blocks file"),
+      name: z.string().optional().describe("Name shown in the timeline"),
+      block_objects: z.boolean().optional().describe("Also add animatable objects for special blocks such as doors and chests. Default false"),
+    },
+    paths: ["path"],
+    timeoutMs: 600000,
+  },
+  {
+    name: "import_image",
+    cmd: "import_image",
+    description: "Add a PNG or JPEG image to the project as a texture resource. Returns the resource (id, type, name, file, used). Put it on a shape with set_object_settings texture.",
+    shape: { path: z.string().min(1).describe("Full path of the image") },
+    paths: ["path"],
+  },
+  {
+    name: "list_resources",
+    cmd: "list_resources",
+    description: "List the files the project uses: skins, downloaded skins, models, scenery, textures, packs, sounds and so on, each with its id, type, name, file and whether anything uses it. The built-in Minecraft pack is listed as id default.",
+    shape: {},
+  },
+  {
+    name: "remove_resource",
+    cmd: "remove_resource",
+    description: "Remove a resource from the project, like deleting it in the Resources tab. Objects that used it go back to their default. One undo step.",
+    shape: { id: z.string().min(1).describe("Resource id, from list_resources") },
   },
 ];
 

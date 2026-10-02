@@ -102,6 +102,12 @@ function bridge_settings_map(tl)
 	if (tl.type = e_tl_type.BLOCK && tl.temp != null)
 		m[?"block"] = tl.temp.block_name
 
+	// Resources: null when the object uses the default
+	if (tl.part_of = null && bridge_skin_owner(tl) = tl)
+		m[?"skin"] = bridge_res_id(tl.temp.model_tex)
+	if (type_is_shape(tl.type) && tl.temp != null)
+		m[?"texture"] = bridge_res_id(tl.temp.shape_tex)
+
 	return m
 }
 
@@ -163,6 +169,21 @@ function bridge_setting_error(tl, name, val)
 				return "Unknown block " + string(val) + ", see list_names"
 			return ""
 		}
+
+		case "texture":
+		{
+			if (!type_is_shape(tl.type) || tl.temp = null)
+				return "texture can only be set on a cube, cone, cylinder, sphere or surface"
+			if (is_real(val) && val < 0)
+				return ""
+			if (!is_string(val))
+				return "texture must be the id of an image from import_image, or null for none"
+			if (bridge_find_res(val) = null)
+				return "Unknown resource " + string(val) + ", see list_resources"
+			if (bridge_find_res(val).type != e_res_type.TEXTURE)
+				return "texture must be an image added with import_image"
+			return ""
+		}
 	}
 
 	return "Unknown setting " + string(name)
@@ -188,6 +209,9 @@ function bridge_setting_apply(tl, name, val)
 		bridge_flag_set(tl, name, (val > 0))
 		return 1
 	}
+
+	if (name = "texture")
+		return bridge_setting_apply_texture(tl, val)
 
 	switch (name)
 	{
@@ -262,6 +286,27 @@ function bridge_setting_apply(tl, name, val)
 	return steps
 }
 
+/// bridge_setting_apply_texture(tl, value)
+/// @arg tl
+/// @arg value
+/// @desc Sets the texture of a shape, or none for a negative value (null). Returns the undo steps added.
+
+function bridge_setting_apply_texture(tl, val)
+{
+	var res, prevtemp;
+	res = null
+	if (is_string(val))
+		res = bridge_find_res(val)
+	if (tl.temp.shape_tex = res)
+		return 0
+
+	prevtemp = temp_edit
+	temp_edit = tl.temp
+	action_lib_shape_tex(res)
+	temp_edit = prevtemp
+	return 1
+}
+
 /// bridge_cmd_set_object_settings(args)
 /// @arg args
 /// @desc Changes settings of one object that are not keyframed. Nothing is applied unless every setting is valid.
@@ -284,7 +329,7 @@ function bridge_cmd_set_object_settings(args)
 		err = bridge_setting_error(tl, key, settings[?key])
 		if (err != "")
 		{
-			if (string_pos("Unknown item", err) = 1 || string_pos("Unknown block", err) = 1)
+			if (string_pos("Unknown item", err) = 1 || string_pos("Unknown block", err) = 1 || string_pos("Unknown resource", err) = 1)
 				return bridge_error("not_found", err)
 			return bridge_error("bad_args", err)
 		}

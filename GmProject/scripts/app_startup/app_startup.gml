@@ -3,6 +3,7 @@
 function app_startup()
 {
 	startup_error = true
+	bridge_startup()
 	
 	if (!lib_startup())
 		return false

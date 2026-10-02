@@ -17,7 +17,10 @@ background basics. 26 tools.
 
 Since then: phase 1 (object settings, name lists), phase 2 (project settings
 and the full background) and phase 3 (duplicate, copy keyframes and poses,
-view camera, markers, loop region) are done. 36 tools.
+view camera, markers, loop region) and phase 4 (skins from files and by
+player name, custom models, scenery files, images as shape textures, resource
+listing and removal) are done. 42 tools. Bridge commands no longer let the app
+open message boxes: errors come back in the reply, questions are answered no.
 
 ## Phases
 
@@ -41,13 +44,21 @@ use reorders priorities.
   to to, leave an empty undo step.
 - Error replies can overtake earlier queued replies; a request without an id
   gets a reply without one.
-- A skin with the same file name as a loaded one is reused even if it is a
-  different file.
+- `create_object` with a skin reuses a loaded skin with the same file name even
+  if it is a different file (`set_skin` copies it instead).
 - The dispatcher ignores `window_busy`, so state can change under a user who is
   mid-drag.
 - Exported and screenshot images are returned in full, with no size cap.
 - A project with missing model files can still raise a dialog on open.
 - Audio in exported movies is untested.
 - The design spec in `specs/` still describes the bridge as launch-flag only.
+- World import (a box of blocks from a Minecraft save) is not exposed: there is
+  no world on the development machine to test it with. The call sequence is
+  known: `action_res_import_world` then `action_res_scenery_animate`, set
+  `setting_world_import_filter_mode` too, and wait for `res.ready` as
+  `import_scenery` does.
+- Background sky images are not exposed yet; `import_image` plus
+  `action_background_image` and `action_background_image_show` would do it.
+- Setting the same skin file twice adds a second copy of the resource.
 - Marker names and the loop region are not checked for length; the loop region
   and repeat mode are not undoable, matching the app.

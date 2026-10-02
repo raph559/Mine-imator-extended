@@ -11,12 +11,27 @@ function bridge_dispatch(cmd, argsjson)
 	if (args < 0)
 		return bridge_error("bad_request", "args must be a JSON object")
 
+	// Message boxes would block the app until someone clicks them: errors are sent back instead
+	// A load a command started may still be running (get_status is answered meanwhile): keep its error
+	bridge_quiet = true
+	if (current_time >= bridge_quiet_until)
+		bridge_quiet_message = ""
+
 	if (cmd = "get_status")
 		res = bridge_cmd_get_status(args)
 	else if (window_state != "" && window_state != "startup")
 		res = bridge_error("busy", "Mine-imator is busy: " + window_state)
 	else
 		res = bridge_dispatch_command(cmd, args)
+
+	// An error the app raised while the command still succeeded
+	if (bridge_quiet_message != "" && res[?"ok"] && current_time >= bridge_quiet_until)
+	{
+		var result = res[?"result"];
+		result[?"warning"] = bridge_quiet_message
+		bridge_quiet_message = ""
+	}
+	bridge_quiet = false
 
 	ds_map_destroy(args)
 	return res
@@ -69,6 +84,12 @@ function bridge_dispatch_command(cmd, args)
 		case "set_marker": return bridge_cmd_set_marker(args)
 		case "remove_marker": return bridge_cmd_remove_marker(args)
 		case "set_loop": return bridge_cmd_set_loop(args)
+		case "set_skin": return bridge_cmd_set_skin(args)
+		case "import_model": return bridge_cmd_import_model(args)
+		case "import_scenery": return bridge_cmd_import_scenery(args)
+		case "import_image": return bridge_cmd_import_image(args)
+		case "list_resources": return bridge_cmd_list_resources(args)
+		case "remove_resource": return bridge_cmd_remove_resource(args)
 		case "undo": return bridge_cmd_undo(args)
 		case "redo": return bridge_cmd_redo(args)
 	}

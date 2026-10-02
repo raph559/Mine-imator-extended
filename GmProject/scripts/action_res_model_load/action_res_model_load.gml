@@ -65,4 +65,8 @@ function action_res_model_load(fn)
 	tl_update_length()
 	tl_update_list()
 	tl_update_matrix()
+	// The removed timeline may have been the one being edited (the automation bridge selects
+	// without a history step), close its editors so they do not draw a destroyed timeline
+	if (history_undo)
+		app_update_tl_edit()
 }

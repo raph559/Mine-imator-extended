@@ -51,6 +51,12 @@ function bridge_dispatch_command(cmd, args)
 		case "set_values": return bridge_cmd_set_values(args)
 		case "remove_keyframes": return bridge_cmd_remove_keyframes(args)
 		case "move_keyframes": return bridge_cmd_move_keyframes(args)
+		case "set_work_camera": return bridge_cmd_set_work_camera(args)
+		case "play": return bridge_cmd_play(args)
+		case "stop": return bridge_cmd_stop(args)
+		case "screenshot": return bridge_cmd_screenshot(args)
+		case "export_image": return bridge_cmd_export_image(args)
+		case "set_background": return bridge_cmd_set_background(args)
 		case "undo": return bridge_cmd_undo(args)
 		case "redo": return bridge_cmd_redo(args)
 	}
@@ -143,13 +149,11 @@ function bridge_cmd_get_status(args)
 	return bridge_ok(result)
 }
 
-/// bridge_pending_poll()
-/// @desc Returns the response map of a command that finishes over several steps, or -1 while it is still running.
+/// bridge_real(value)
+/// @arg value
+/// @desc A bridge number as a plain real (to 3 decimals), so app variables keep their number type.
 
-function bridge_pending_poll()
+function bridge_real(val)
 {
-	if (window_state = "export_image")
-		return -1
-
-	return bridge_error("internal_error", "No command is pending")
+	return round(val * 1000) / 1000
 }

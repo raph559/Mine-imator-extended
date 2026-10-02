@@ -19,7 +19,7 @@ A small dot on the MCP button shows that it is running. Toasts announce when it 
 
 ## Tools
 
-`launch_app`, `get_status`, `project_new`, `project_open`, `project_save`, `get_scene`, `get_object`, `create_object`, `remove_object`, `rename_object`, `set_parent`, `select_objects`, `set_object_settings`, `list_names`, `undo`, `redo`, `set_frame`, `set_values`, `set_keyframes`, `remove_keyframes`, `move_keyframe`, `set_work_camera`, `play`, `stop`, `screenshot`, `export_image`, `export_movie`, `set_background`.
+`launch_app`, `get_status`, `project_new`, `project_open`, `project_save`, `get_scene`, `get_object`, `create_object`, `remove_object`, `rename_object`, `set_parent`, `select_objects`, `set_object_settings`, `list_names`, `undo`, `redo`, `set_frame`, `set_values`, `set_keyframes`, `remove_keyframes`, `move_keyframe`, `set_work_camera`, `play`, `stop`, `screenshot`, `export_image`, `export_movie`, `set_background`, `get_project_settings`, `set_project_settings`.
 
 Every change goes through the app's own actions, so it shows up live and Ctrl+Z undoes it.
 

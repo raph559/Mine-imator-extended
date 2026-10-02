@@ -18,7 +18,7 @@ test("every bridge command has a tool", () => {
   const commands = ["get_status", "project_new", "project_open", "project_save", "get_scene", "get_object",
     "create_object", "remove_object", "rename_object", "set_parent", "select", "set_object_settings", "list_names", "undo", "redo",
     "set_frame", "set_values", "set_keyframes", "remove_keyframes", "move_keyframes",
-    "set_work_camera", "play", "stop", "screenshot", "export_image", "export_movie", "set_background"];
+    "set_work_camera", "play", "stop", "screenshot", "export_image", "export_movie", "set_background", "get_project_settings", "set_project_settings"];
   assert.deepEqual(tools.map((t) => t.cmd).sort(), commands.sort());
 });
 
@@ -56,6 +56,14 @@ test("input shapes reject bad input and accept good input", () => {
   assert.ok(!settings.safeParse({ id: "a", settings: { no_such_setting: true } }).success);
   assert.ok(!settings.safeParse({ id: "a", settings: { pivot: [1, 2] } }).success);
   assert.ok(!z.object(tool("list_names").shape).safeParse({ kind: "sounds" }).success);
+  const project = z.object(tool("set_project_settings").shape);
+  assert.ok(project.safeParse({ settings: { tempo: 30, video_width: 1920, video_height: 1080 } }).success);
+  assert.ok(!project.safeParse({ settings: { tempo: 0 } }).success);
+  assert.ok(!project.safeParse({ settings: { fps: 30 } }).success);
+  const background = z.object(tool("set_background").shape);
+  assert.ok(background.safeParse({ fog_show: false, sky_color: "#102030", sky_moon_phase: 3 }).success);
+  assert.ok(!background.safeParse({ sky_color: "blue" }).success);
+  assert.ok(!background.safeParse({ sky_moon_phase: 9 }).success);
 });
 
 test("describeError explains bridge and connection failures", () => {

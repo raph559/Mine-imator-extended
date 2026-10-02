@@ -6,6 +6,7 @@ import { z } from "zod";
 const id = z.string().min(1).describe("Object id, from get_scene or create_object");
 const frame = z.number().int().min(0).describe("Timeline frame, 0 or more");
 const overwrite = z.boolean().optional().describe("Replace the file if it already exists");
+const hexColor = z.string().regex(/^#[0-9a-fA-F]{6}$/);
 
 /** Mine-imator works with forward slashes in paths. */
 export function normalizePath(p) {
@@ -257,12 +258,75 @@ export const tools = [
   {
     name: "set_background",
     cmd: "set_background",
-    description: "Change background settings and report the current ones. Only the given fields change.",
+    description: "Change the scene's background: sky, sun and moon, clouds, fog, wind, ground and tint colours. Only the given settings change, and nothing is applied if one is wrong. Returns every background setting afterwards, plus undo_steps (one per setting that changed). Call it with no settings to just read them.",
     shape: {
-      sky_time: z.number().optional().describe("Time of day, the same number as the Time setting in the Background tab"),
+      sky_time: z.number().optional().describe("Time of day, the same number as the Time setting in the Background tab (default -45)"),
+      sky_rotation: z.number().optional(),
+      sunlight_strength: z.number().optional().describe("1 is normal strength"),
+      sunlight_angle: z.number().optional(),
+      sky_sun_angle: z.number().optional(),
+      sky_sun_scale: z.number().optional().describe("1 is normal size"),
+      sky_moon_angle: z.number().optional(),
+      sky_moon_scale: z.number().optional().describe("1 is normal size"),
+      sky_clouds_speed: z.number().optional(),
+      sky_clouds_height: z.number().optional(),
+      sky_clouds_size: z.number().optional(),
+      sky_clouds_thickness: z.number().optional(),
+      sky_clouds_offset: z.number().optional(),
+      fog_distance: z.number().optional(),
+      fog_size: z.number().optional(),
+      fog_height: z.number().optional(),
+      wind_speed: z.number().optional(),
+      wind_strength: z.number().optional(),
+      wind_direction: z.number().optional(),
+      sky_clouds_show: z.boolean().optional(),
+      fog_show: z.boolean().optional(),
+      fog_sky: z.boolean().optional(),
+      fog_color_custom: z.boolean().optional().describe("Use fog_color instead of the sky colour for fog"),
+      twilight: z.boolean().optional(),
+      wind: z.boolean().optional(),
       ground_show: z.boolean().optional().describe("Show the ground plane"),
-      biome: z.string().optional().describe("Biome name, e.g. plains"),
-      sky_color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+      sky_color: hexColor.optional(),
+      sky_clouds_color: hexColor.optional(),
+      sunlight_color: hexColor.optional(),
+      ambient_color: hexColor.optional(),
+      night_color: hexColor.optional(),
+      grass_color: hexColor.optional(),
+      foliage_color: hexColor.optional(),
+      water_color: hexColor.optional(),
+      fog_color: hexColor.optional(),
+      sky_moon_phase: z.number().int().min(0).max(7).optional(),
+      biome: z.string().optional().describe("Biome name, e.g. plains, desert"),
+    },
+  },
+  {
+    name: "get_project_settings",
+    cmd: "get_project_settings",
+    description: "Read the project's settings: name, tempo (timeline frames per second), video resolution, render options, and every background setting.",
+    shape: {},
+  },
+  {
+    name: "set_project_settings",
+    cmd: "set_project_settings",
+    description: "Change the project's tempo, video resolution and render options. Only the given settings change, and nothing is applied if one is wrong. Returns the settings afterwards, plus undo_steps. Exports use this resolution. Setting only the width or only the height keeps the aspect ratio if the project has that lock on; setting both applies them exactly. render_preset replaces the individual render options, so it is applied first.",
+    shape: {
+      settings: z
+        .object({
+          tempo: z.number().min(1).max(100).describe("Timeline frames per second"),
+          video_width: z.number().int().min(1).max(8192),
+          video_height: z.number().int().min(1).max(8192),
+          render_preset: z.string().describe("performance, balanced or extreme"),
+          render_samples: z.number().int().min(1).max(256).describe("Samples for high quality renders; more is smoother and slower"),
+          render_shadows: z.boolean(),
+          render_ssao: z.boolean().describe("Ambient occlusion"),
+          render_glow: z.boolean(),
+          render_aa: z.boolean().describe("Anti-aliasing"),
+          render_indirect: z.boolean().describe("Indirect lighting"),
+          render_reflections: z.boolean(),
+        })
+        .partial()
+        .strict()
+        .describe("Setting name to value"),
     },
   },
 ];

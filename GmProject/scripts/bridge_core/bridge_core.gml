@@ -61,6 +61,8 @@ function bridge_dispatch_command(cmd, args)
 		case "export_image": return bridge_cmd_export_image(args)
 		case "export_movie": return bridge_cmd_export_movie(args)
 		case "set_background": return bridge_cmd_set_background(args)
+		case "get_project_settings": return bridge_cmd_get_project_settings(args)
+		case "set_project_settings": return bridge_cmd_set_project_settings(args)
 		case "undo": return bridge_cmd_undo(args)
 		case "redo": return bridge_cmd_redo(args)
 	}

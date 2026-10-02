@@ -22,9 +22,9 @@ after(async () => { await mcp?.close(); await app?.stop(); });
 
 test("lists every tool", async () => {
   const names = (await mcp.listTools()).tools.map((t) => t.name);
-  for (const name of ["launch_app", "get_status", "create_object", "set_values", "screenshot", "export_image"])
+  for (const name of ["launch_app", "get_status", "create_object", "set_values", "set_keyframes", "screenshot", "export_image", "export_movie"])
     assert.ok(names.includes(name), name);
-  assert.equal(names.length, 24);
+  assert.equal(names.length, 26);
 });
 
 test("launch_app reports the running app without starting another", async () => {

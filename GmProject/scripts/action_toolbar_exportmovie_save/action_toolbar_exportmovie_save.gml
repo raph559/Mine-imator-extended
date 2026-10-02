@@ -14,6 +14,25 @@ function action_toolbar_exportmovie_save()
 	if (fn = "")
 		return 0
 	
+	var started;
+	if (timeline_region_start != null)
+		started = exportmovie_begin(fn, timeline_region_start, timeline_region_end)
+	else
+		started = exportmovie_begin(fn, 0, timeline_length)
+	
+	if (!started)
+		error("errorexportmovie")
+}
+
+/// exportmovie_begin(filename, startmarker, endmarker)
+/// @arg filename
+/// @arg startmarker
+/// @arg endmarker
+/// @desc Starts exporting the given part of the timeline with the settings of the export movie popup.
+/// Returns whether the export could start. Shows no dialogs.
+
+function exportmovie_begin(fn, startmarker, endmarker)
+{
 	// Start rendering
 	export_filename = fn
 	exportmovie_marker_previous = timeline_marker
@@ -22,16 +41,8 @@ function action_toolbar_exportmovie_save()
 	exportmovie_high_quality = popup_exportmovie.high_quality
 	exportmovie_current_sound = null
 	
-	if (timeline_region_start != null)
-	{
-		exportmovie_marker_start = timeline_region_start
-		exportmovie_marker_end = timeline_region_end
-	}
-	else
-	{
-		exportmovie_marker_start = 0
-		exportmovie_marker_end = timeline_length
-	}
+	exportmovie_marker_start = startmarker
+	exportmovie_marker_end = endmarker
 	
 	if (exportmovie_format != "png")
 	{
@@ -52,10 +63,9 @@ function action_toolbar_exportmovie_save()
 		if (err < 0)
 		{
 			log("Error when exporting, error code", err)
-			error("errorexportmovie")
 			render_hidden = false
 			render_watermark = false
-			return 0
+			return false
 		}
 		
 		// Add sounds
@@ -77,8 +87,7 @@ function action_toolbar_exportmovie_save()
 					{
 						movie_done()
 						log("Error adding audio file, error code", sound_file_id)
-						error("errorexportmovie")
-						return 0
+						return false
 					}
 				}
 			}
@@ -106,8 +115,7 @@ function action_toolbar_exportmovie_save()
 							{
 								movie_done()
 								log("Error adding sound, error code", ret)
-								error("errorexportmovie")
-								return 0
+								return false
 							}
 						}
 					}
@@ -146,4 +154,6 @@ function action_toolbar_exportmovie_save()
 	
 	timeline_marker = exportmovie_marker_start
 	action_tl_play_start()
+	
+	return true
 }

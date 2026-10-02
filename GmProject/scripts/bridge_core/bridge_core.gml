@@ -49,6 +49,7 @@ function bridge_dispatch_command(cmd, args)
 		case "select": return bridge_cmd_select(args)
 		case "set_frame": return bridge_cmd_set_frame(args)
 		case "set_values": return bridge_cmd_set_values(args)
+		case "set_keyframes": return bridge_cmd_set_keyframes(args)
 		case "remove_keyframes": return bridge_cmd_remove_keyframes(args)
 		case "move_keyframes": return bridge_cmd_move_keyframes(args)
 		case "set_work_camera": return bridge_cmd_set_work_camera(args)
@@ -56,6 +57,7 @@ function bridge_dispatch_command(cmd, args)
 		case "stop": return bridge_cmd_stop(args)
 		case "screenshot": return bridge_cmd_screenshot(args)
 		case "export_image": return bridge_cmd_export_image(args)
+		case "export_movie": return bridge_cmd_export_movie(args)
 		case "set_background": return bridge_cmd_set_background(args)
 		case "undo": return bridge_cmd_undo(args)
 		case "redo": return bridge_cmd_redo(args)
@@ -145,6 +147,13 @@ function bridge_cmd_get_status(args)
 	result[?"object_count"] = instance_number(obj_timeline)
 	result[?"undo_steps"] = history_amount - history_pos
 	result[?"redo_steps"] = history_pos
+	
+	// Progress of a running movie export
+	if (window_state = "export_movie")
+	{
+		result[?"export_frame"] = exportmovie_frame
+		result[?"export_frames"] = floor(((exportmovie_marker_end - exportmovie_marker_start) / project_tempo) * popup_exportmovie.framespersecond) + 1
+	}
 
 	return bridge_ok(result)
 }

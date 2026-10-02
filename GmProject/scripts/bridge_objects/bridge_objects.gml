@@ -216,26 +216,62 @@ function bridge_cmd_select(args)
 	return bridge_ok(result)
 }
 
+/// bridge_steps_error(args)
+/// @arg args
+/// @desc Checks the optional steps argument of undo and redo. Returns "" if it is fine.
+
+function bridge_steps_error(args)
+{
+	if (!is_real(bridge_arg(args, "steps", 1)) || bridge_arg(args, "steps", 1) < 1)
+		return "steps must be a number of 1 or more"
+
+	return ""
+}
+
 /// bridge_cmd_undo(args)
 /// @arg args
+/// @desc Undoes up to "steps" changes (default 1) and reports how many it undid.
 
 function bridge_cmd_undo(args)
 {
-	var result = ds_map_create();
-	result[?"done"] = (history_pos < history_amount)
-	action_toolbar_undo()
+	var steps, done, result;
+	if (bridge_steps_error(args) != "")
+		return bridge_error("bad_args", bridge_steps_error(args))
 
+	steps = round(bridge_arg(args, "steps", 1))
+	done = 0
+	while (done < steps && history_pos < history_amount)
+	{
+		action_toolbar_undo()
+		done++
+	}
+
+	result = ds_map_create()
+	result[?"done"] = (done > 0)
+	result[?"steps"] = done
 	return bridge_ok(result)
 }
 
 /// bridge_cmd_redo(args)
 /// @arg args
+/// @desc Redoes up to "steps" changes (default 1) and reports how many it redid.
 
 function bridge_cmd_redo(args)
 {
-	var result = ds_map_create();
-	result[?"done"] = (history_pos > 0)
-	action_toolbar_redo()
+	var steps, done, result;
+	if (bridge_steps_error(args) != "")
+		return bridge_error("bad_args", bridge_steps_error(args))
 
+	steps = round(bridge_arg(args, "steps", 1))
+	done = 0
+	while (done < steps && history_pos > 0)
+	{
+		action_toolbar_redo()
+		done++
+	}
+
+	result = ds_map_create()
+	result[?"done"] = (done > 0)
+	result[?"steps"] = done
 	return bridge_ok(result)
 }

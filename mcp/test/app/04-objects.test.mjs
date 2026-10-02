@@ -69,9 +69,19 @@ test("remove_object removes it, a stale id is not_found, undo brings it back", a
   await assert.rejects(call("remove_object", { id: cube.id }), (err) => err.code === "not_found");
   await assert.rejects(call("rename_object", { id: cube.id, name: "x" }), (err) => err.code === "not_found");
   assert.deepEqual(await ids(), afterRemove);
-  assert.deepEqual(await call("undo"), { done: true });
+  assert.deepEqual(await call("undo"), { done: true, steps: 1 });
   assert.ok((await ids()).includes(cube.id));
-  assert.deepEqual(await call("redo"), { done: true });
+  assert.deepEqual(await call("redo"), { done: true, steps: 1 });
+  assert.ok(!(await ids()).includes(cube.id));
+});
+
+test("undoing a creation removes the object and the app keeps running", async () => {
+  const cube = await call("create_object", { type: "cube", name: "Short lived" });
+  await call("set_values", { id: cube.id, frame: 3, values: { pos_x: 5 } }); // leaves the cube selected with its editor open
+  const undone = await app.client.call("undo", { steps: 3 }, { timeoutMs: 8000 }); // values, name, creation
+  assert.equal(undone.steps, 3);
+  await new Promise((r) => setTimeout(r, 500)); // let the app draw a few frames
+  assert.equal((await app.client.call("get_status", {}, { timeoutMs: 8000 })).protocol, 1);
   assert.ok(!(await ids()).includes(cube.id));
 });
 

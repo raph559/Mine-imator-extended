@@ -30,27 +30,16 @@ function bridge_cmd_set_frame(args)
 	return bridge_ok(result)
 }
 
-/// bridge_cmd_set_values(args)
-/// @arg args
-/// @desc Sets values of one object at a frame, creating the keyframe if needed. One undo step.
+/// bridge_values_error(valmap)
+/// @arg valmap
+/// @desc Checks a map of value name to value from a request. Returns "" if every entry can be applied, otherwise why not.
 
-function bridge_cmd_set_values(args)
+function bridge_values_error(valmap)
 {
-	var tl, valmap, vids, vals, n, key, vid, val, result;
-	tl = bridge_find_tl(bridge_arg(args, "id", ""))
-	if (tl = null)
-		return bridge_error("not_found", "No object with id " + string(bridge_arg(args, "id", "")))
+	var key, vid, val, n;
+	if (!is_real(valmap) || !ds_exists(valmap, ds_type_map))
+		return "values must be an object of value name to value"
 
-	if (!is_real(bridge_arg(args, "frame", 0)) || bridge_arg(args, "frame", 0) < 0)
-		return bridge_error("bad_args", "frame must be a number of 0 or more")
-
-	if (!ds_map_exists(args, "values") || !is_real(args[?"values"]) || !ds_exists(args[?"values"], ds_type_map))
-		return bridge_error("bad_args", "values must be an object of value name to value")
-	valmap = args[?"values"]
-
-	// Check everything before changing anything
-	vids = array()
-	vals = array()
 	n = 0
 	key = ds_map_find_first(valmap)
 	while (!is_undefined(key))
@@ -58,63 +47,149 @@ function bridge_cmd_set_values(args)
 		vid = ds_list_find_index(value_name_list, string_upper(key))
 		val = valmap[?key]
 		if (vid < 0)
-			return bridge_error("bad_args", "Unknown value name " + string(key))
+			return "Unknown value name " + string(key)
 
 		if (tl_value_is_texture(vid) || tl_value_is_obj(vid))
-			return bridge_error("bad_args", string(key) + " refers to a resource and cannot be set through the bridge")
+			return string(key) + " refers to a resource and cannot be set through the bridge"
 		else if (tl_value_is_color(vid))
 		{
 			if (!bridge_is_hex_color(val))
-				return bridge_error("bad_args", string(key) + " must be a color like #RRGGBB")
-			val = hex_to_color(val)
+				return string(key) + " must be a color like #RRGGBB"
 		}
 		else if (vid = e_value.TRANSITION)
 		{
 			if (!is_string(val) || ds_list_find_index(transition_list, val) < 0)
-				return bridge_error("bad_args", "Unknown transition " + string(val))
+				return "Unknown transition " + string(val)
 		}
 		else if (tl_value_is_string(vid))
 		{
 			if (!is_string(val))
-				return bridge_error("bad_args", string(key) + " must be a string")
+				return string(key) + " must be a string"
 		}
 		else if (tl_value_is_bool(vid))
 		{
 			if (!is_bool(val))
-				return bridge_error("bad_args", string(key) + " must be true or false")
+				return string(key) + " must be true or false"
 		}
 		else if (!is_real(val))
-			return bridge_error("bad_args", string(key) + " must be a number")
+			return string(key) + " must be a number"
 
-		vids[n] = vid
-		vals[n] = val
 		n++
 		key = ds_map_find_next(valmap, key)
 	}
+
 	if (n = 0)
-		return bridge_error("bad_args", "values is empty")
+		return "values is empty"
+
+	return ""
+}
+
+/// bridge_values_apply(tl, frame, valmap)
+/// @arg tl
+/// @arg frame
+/// @arg valmap
+/// @desc Sets already checked values on one timeline at a frame, creating the keyframe if needed. One undo step.
+
+function bridge_values_apply(tl, frame, valmap)
+{
+	var key, vid, val;
 
 	// Select only this timeline and put the marker on the frame, as the UI does before editing
-	if (timeline_playing)
-		action_tl_play()
 	tl_deselect_all()
 	with (tl)
 		tl_select()
 	app_update_tl_edit()
-	timeline_marker = round(bridge_arg(args, "frame", timeline_marker))
+	timeline_marker = frame
 	with (tl)
 		tl_update_values()
 
 	tl_value_set_start(tl_value_set, false)
-	for (var i = 0; i < n; i++)
-		tl_value_set(vids[i], vals[i], false)
+	key = ds_map_find_first(valmap)
+	while (!is_undefined(key))
+	{
+		vid = ds_list_find_index(value_name_list, string_upper(key))
+		val = valmap[?key]
+		if (tl_value_is_color(vid))
+			val = hex_to_color(val)
+
+		tl_value_set(vid, val, false)
+		key = ds_map_find_next(valmap, key)
+	}
 	tl_value_set_done()
 	tl_update_length()
+}
+
+/// bridge_cmd_set_values(args)
+/// @arg args
+/// @desc Sets values of one object at a frame, creating the keyframe if needed. One undo step.
+
+function bridge_cmd_set_values(args)
+{
+	var tl, err, result;
+	tl = bridge_find_tl(bridge_arg(args, "id", ""))
+	if (tl = null)
+		return bridge_error("not_found", "No object with id " + string(bridge_arg(args, "id", "")))
+
+	if (!is_real(bridge_arg(args, "frame", 0)) || bridge_arg(args, "frame", 0) < 0)
+		return bridge_error("bad_args", "frame must be a number of 0 or more")
+
+	err = bridge_values_error(bridge_arg(args, "values", null))
+	if (err != "")
+		return bridge_error("bad_args", err)
+
+	if (timeline_playing)
+		action_tl_play()
+	bridge_values_apply(tl, round(bridge_arg(args, "frame", timeline_marker)), args[?"values"])
 
 	result = ds_map_create()
 	result[?"id"] = tl.save_id
 	result[?"frame"] = timeline_marker
-	result[?"values_set"] = n
+	result[?"values_set"] = ds_map_size(args[?"values"])
+	return bridge_ok(result)
+}
+
+/// bridge_cmd_set_keyframes(args)
+/// @arg args
+/// @desc Sets many keyframes in one call: a list of {id, frame, values}. Nothing is applied unless every entry is valid.
+
+function bridge_cmd_set_keyframes(args)
+{
+	var list, entry, err, prevmarker, result;
+	if (!ds_map_exists(args, "keyframes") || !is_real(args[?"keyframes"]) || !ds_exists(args[?"keyframes"], ds_type_list) || ds_list_size(args[?"keyframes"]) = 0)
+		return bridge_error("bad_args", "keyframes must be a non-empty list of {id, frame, values}")
+	list = args[?"keyframes"]
+
+	// Check everything before changing anything
+	for (var i = 0; i < ds_list_size(list); i++)
+	{
+		entry = list[|i]
+		if (!is_real(entry) || !ds_exists(entry, ds_type_map))
+			return bridge_error("bad_args", "keyframes[" + string(i) + "] must be an object with id, frame and values")
+		if (bridge_find_tl(bridge_arg(entry, "id", "")) = null)
+			return bridge_error("not_found", "keyframes[" + string(i) + "]: no object with id " + string(bridge_arg(entry, "id", "")))
+		if (!is_real(bridge_arg(entry, "frame", null)) || bridge_arg(entry, "frame", null) < 0)
+			return bridge_error("bad_args", "keyframes[" + string(i) + "]: frame must be a number of 0 or more")
+
+		err = bridge_values_error(bridge_arg(entry, "values", null))
+		if (err != "")
+			return bridge_error("bad_args", "keyframes[" + string(i) + "]: " + err)
+	}
+
+	if (timeline_playing)
+		action_tl_play()
+	prevmarker = timeline_marker
+
+	for (var i = 0; i < ds_list_size(list); i++)
+	{
+		entry = list[|i]
+		bridge_values_apply(bridge_find_tl(entry[?"id"]), round(entry[?"frame"]), entry[?"values"])
+	}
+
+	timeline_marker = prevmarker
+
+	result = ds_map_create()
+	result[?"keyframes"] = ds_list_size(list)
+	result[?"undo_steps"] = ds_list_size(list)
 	return bridge_ok(result)
 }
 

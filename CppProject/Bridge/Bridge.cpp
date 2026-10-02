@@ -75,7 +75,10 @@ namespace CppProject
 
 		value = qEnvironmentVariableIntValue("MINEIMATOR_BRIDGE_PENDING_TIMEOUT_MS", &ok);
 		if (ok && value > 0)
+		{
 			pendingTimeoutMs = value;
+			pendingTimeoutFixed = true;
+		}
 
 		connect(&server, &QTcpServer::newConnection, this, [this]()
 		{
@@ -218,7 +221,7 @@ namespace CppProject
 					ds_map_destroy(mapId);
 					waiting = false;
 				}
-				else if (waitingTimer.hasExpired(pendingTimeoutMs))
+				else if (waitingTimer.hasExpired(waitingTimeoutMs))
 				{
 					ReplyError(waitingRequest.socket, waitingRequest.id, "timeout", "The command did not finish in time. It may still be running in Mine-imator");
 					waiting = false;
@@ -258,6 +261,11 @@ namespace CppProject
 						waiting = true;
 						waitingRequest = request;
 						waitingTimer.start();
+
+						// A command may ask for a longer wait (a movie export), unless the limit was set from outside
+						waitingTimeoutMs = pendingTimeoutMs;
+						if (!pendingTimeoutFixed && body.value("pending_timeout_ms").toDouble() > 0)
+							waitingTimeoutMs = (qint64)body.value("pending_timeout_ms").toDouble();
 					}
 					else
 						Reply(request.socket, request.id, body);
@@ -286,6 +294,7 @@ namespace CppProject
 			return;
 
 		body.remove("pending");
+		body.remove("pending_timeout_ms");
 		body["id"] = id;
 		socket->write(QJsonDocument(body).toJson(QJsonDocument::Compact) + "\n");
 	}

@@ -17,8 +17,8 @@ test("tool names and bridge commands are unique and every tool is documented", (
 test("every bridge command has a tool", () => {
   const commands = ["get_status", "project_new", "project_open", "project_save", "get_scene", "get_object",
     "create_object", "remove_object", "rename_object", "set_parent", "select", "undo", "redo",
-    "set_frame", "set_values", "remove_keyframes", "move_keyframes",
-    "set_work_camera", "play", "stop", "screenshot", "export_image", "set_background"];
+    "set_frame", "set_values", "set_keyframes", "remove_keyframes", "move_keyframes",
+    "set_work_camera", "play", "stop", "screenshot", "export_image", "export_movie", "set_background"];
   assert.deepEqual(tools.map((t) => t.cmd).sort(), commands.sort());
 });
 
@@ -44,6 +44,12 @@ test("input shapes reject bad input and accept good input", () => {
   assert.ok(!z.object(tool("set_values").shape).safeParse({ id: "a", frame: -1, values: {} }).success);
   assert.ok(!z.object(tool("create_object").shape).safeParse({ type: "scenery" }).success);
   assert.ok(!z.object(tool("set_work_camera").shape).safeParse({ focus: [1, 2] }).success);
+  assert.ok(z.object(tool("set_keyframes").shape).safeParse({ keyframes: [{ id: "a", frame: 0, values: { pos_x: 1 } }] }).success);
+  assert.ok(!z.object(tool("set_keyframes").shape).safeParse({ keyframes: [] }).success);
+  assert.ok(!z.object(tool("set_keyframes").shape).safeParse({ keyframes: [{ id: "a", values: { pos_x: 1 } }] }).success);
+  assert.ok(z.object(tool("export_movie").shape).safeParse({ path: "C:/v/a.mp4", start_frame: 0, end_frame: 48 }).success);
+  assert.ok(!z.object(tool("export_movie").shape).safeParse({ path: "C:/v/a.mp4", frame_rate: 0 }).success);
+  assert.ok(!z.object(tool("undo").shape).safeParse({ steps: 0 }).success);
 });
 
 test("describeError explains bridge and connection failures", () => {

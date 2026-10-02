@@ -73,6 +73,8 @@ namespace CppProject
 		BoolType waiting = false;
 		Request waitingRequest;
 		QElapsedTimer waitingTimer;
-		qint64 pendingTimeoutMs = 10 * 60 * 1000; // MINEIMATOR_BRIDGE_PENDING_TIMEOUT_MS overrides
+		qint64 pendingTimeoutMs = 10 * 60 * 1000; // Default limit, MINEIMATOR_BRIDGE_PENDING_TIMEOUT_MS overrides
+		bool pendingTimeoutFixed = false; // Set from the environment: commands cannot extend it
+		qint64 waitingTimeoutMs = 0; // Limit of the command being waited for
 	};
 }

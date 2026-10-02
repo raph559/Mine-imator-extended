@@ -150,7 +150,8 @@ function bridge_cmd_export_image(args)
 	if (file_exists_lib(fn))
 		file_delete_lib(fn)
 
-	// Same as action_toolbar_exportimage_save
+	// Same as action_toolbar_exportimage_save. The dialog's own setting is put back by bridge_pending_poll
+	bridge_saved_image_hq = popup_exportimage.high_quality
 	export_filename = fn
 	popup_exportimage.high_quality = (bridge_arg(args, "high_quality", true) > 0)
 	render_hidden = (bridge_arg(args, "include_hidden", false) > 0)
@@ -169,10 +170,99 @@ function bridge_cmd_export_image(args)
 	if (view_second.quality = e_view_mode.RENDER)
 		view_second.quality = e_view_mode.SHADED
 
+	bridge_pending_kind = "image"
 	bridge_pending_path = fn
 	res = bridge_ok(ds_map_create())
 	res[?"pending"] = true
 	return res
+}
+
+/// bridge_cmd_export_movie(args)
+/// @arg args
+/// @desc Starts the movie export without its dialogs. The reply is sent by bridge_pending_poll once the file is written.
+
+function bridge_cmd_export_movie(args)
+{
+	var fn, fmt, startframe, endframe, fps, bitrate, res;
+	if (!is_string(bridge_arg(args, "path", "")))
+		return bridge_error("bad_args", "path must be a string")
+
+	fn = string(bridge_arg(args, "path", ""))
+	fmt = string_delete(string_lower(filename_ext(fn)), 1, 1)
+	if (fmt != "mp4" && fmt != "mov" && fmt != "wmv")
+		return bridge_error("bad_args", "path must be a file name ending in .mp4, .mov or .wmv")
+	if (!directory_exists_lib(filename_dir(fn)))
+		return bridge_error("bad_args", "The folder does not exist: " + filename_dir(fn))
+	if (file_exists_lib(fn) && !(bridge_arg(args, "overwrite", false) > 0))
+		return bridge_error("bad_args", "The file already exists, pass overwrite: true to replace it")
+
+	if (!is_real(bridge_arg(args, "start_frame", 0)) || bridge_arg(args, "start_frame", 0) < 0 || !is_real(bridge_arg(args, "end_frame", 0)))
+		return bridge_error("bad_args", "start_frame and end_frame must be frame numbers of 0 or more")
+	startframe = round(bridge_arg(args, "start_frame", 0))
+	endframe = round(bridge_arg(args, "end_frame", timeline_length))
+	if (endframe <= startframe)
+		return bridge_error("bad_args", "There is nothing to export: end_frame must be after start_frame")
+
+	if (!is_real(bridge_arg(args, "frame_rate", 1)) || bridge_arg(args, "frame_rate", 1) < 1 || bridge_arg(args, "frame_rate", 1) > 120)
+		return bridge_error("bad_args", "frame_rate must be a number from 1 to 120")
+	fps = round(bridge_arg(args, "frame_rate", project_tempo))
+
+	if (!is_real(bridge_arg(args, "bit_rate", 1)) || bridge_arg(args, "bit_rate", 1) < 1)
+		return bridge_error("bad_args", "bit_rate must be a number above 0")
+	bitrate = round(bridge_arg(args, "bit_rate", popup_exportmovie.bit_rate))
+
+	if (timeline_playing)
+		action_tl_play()
+	if (file_exists_lib(fn))
+		file_delete_lib(fn)
+
+	// The export reads its settings from the export movie popup. Use ours, bridge_pending_poll puts the user's back
+	bridge_saved_movie_format = popup_exportmovie.format
+	bridge_saved_movie_fps = popup_exportmovie.framespersecond
+	bridge_saved_movie_bit_rate = popup_exportmovie.bit_rate
+	bridge_saved_movie_audio = popup_exportmovie.include_audio
+	bridge_saved_movie_hq = popup_exportmovie.high_quality
+	bridge_saved_movie_hidden = popup_exportmovie.include_hidden
+	popup_exportmovie.format = fmt
+	popup_exportmovie.framespersecond = fps
+	popup_exportmovie.bit_rate = bitrate
+	popup_exportmovie.include_audio = (bridge_arg(args, "include_audio", true) > 0)
+	popup_exportmovie.high_quality = (bridge_arg(args, "high_quality", true) > 0)
+	popup_exportmovie.include_hidden = (bridge_arg(args, "include_hidden", false) > 0)
+
+	bridge_pending_kind = "movie"
+	bridge_pending_path = fn
+	bridge_pending_frames = floor(((endframe - startframe) / project_tempo) * fps) + 1
+	bridge_pending_fps = fps
+
+	if (!exportmovie_begin(fn, startframe, endframe))
+	{
+		bridge_export_restore()
+		return bridge_error("io_error", "The movie encoder could not start for " + fn)
+	}
+
+	res = bridge_ok(ds_map_create())
+	res[?"pending"] = true
+	res[?"pending_timeout_ms"] = 3600000 // A movie can take a while
+	return res
+}
+
+/// bridge_export_restore()
+/// @desc Puts back the export popup settings that a bridge export replaced.
+
+function bridge_export_restore()
+{
+	if (bridge_pending_kind = "movie")
+	{
+		popup_exportmovie.format = bridge_saved_movie_format
+		popup_exportmovie.framespersecond = bridge_saved_movie_fps
+		popup_exportmovie.bit_rate = bridge_saved_movie_bit_rate
+		popup_exportmovie.include_audio = bridge_saved_movie_audio
+		popup_exportmovie.high_quality = bridge_saved_movie_hq
+		popup_exportmovie.include_hidden = bridge_saved_movie_hidden
+	}
+	else
+		popup_exportimage.high_quality = bridge_saved_image_hq
 }
 
 /// bridge_pending_poll()
@@ -181,8 +271,10 @@ function bridge_cmd_export_image(args)
 function bridge_pending_poll()
 {
 	var result;
-	if (window_state = "export_image")
+	if (window_state = "export_image" || window_state = "export_movie")
 		return -1
+
+	bridge_export_restore()
 
 	if (!file_exists_lib(bridge_pending_path))
 		return bridge_error("io_error", "The export finished but no file was written to " + bridge_pending_path)
@@ -191,6 +283,12 @@ function bridge_pending_poll()
 	result[?"path"] = bridge_pending_path
 	result[?"width"] = project_video_width
 	result[?"height"] = project_video_height
+	if (bridge_pending_kind = "movie")
+	{
+		result[?"frames"] = bridge_pending_frames
+		result[?"frame_rate"] = bridge_pending_fps
+		result[?"seconds"] = bridge_real(bridge_pending_frames / bridge_pending_fps)
+	}
 	return bridge_ok(result)
 }
 

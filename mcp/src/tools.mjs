@@ -97,14 +97,14 @@ export const tools = [
   {
     name: "undo",
     cmd: "undo",
-    description: "Undo the last change, the same as Ctrl+Z in the app. done is false when there was nothing to undo.",
-    shape: {},
+    description: "Undo the last change, the same as Ctrl+Z in the app, or several at once with steps. Returns how many were undone; done is false when there was nothing to undo. Creating an object is one step, plus one if it was given a name.",
+    shape: { steps: z.number().int().min(1).optional().describe("How many changes to undo. Default 1") },
   },
   {
     name: "redo",
     cmd: "redo",
-    description: "Redo the last undone change. done is false when there was nothing to redo.",
-    shape: {},
+    description: "Redo the last undone change, or several with steps. Returns how many were redone; done is false when there was nothing to redo.",
+    shape: { steps: z.number().int().min(1).optional().describe("How many changes to redo. Default 1") },
   },
   {
     name: "set_frame",
@@ -120,6 +120,17 @@ export const tools = [
       id,
       frame: frame.optional().describe("Frame to keyframe at. Default: the current frame"),
       values: z.record(z.string(), z.union([z.number(), z.string(), z.boolean()])).describe("Value name to value"),
+    },
+  },
+  {
+    name: "set_keyframes",
+    cmd: "set_keyframes",
+    description: "Set many keyframes in one call: a list of {id, frame, values}, across any objects and frames. Prefer this over repeated set_values when animating. Values follow the same rules as set_values. Every entry is checked first and nothing is applied if one is wrong. Each keyframe is its own undo step; the result's undo_steps is the number to pass to undo to take the whole batch back. The timeline marker is left where it was.",
+    shape: {
+      keyframes: z
+        .array(z.object({ id, frame, values: z.record(z.string(), z.union([z.number(), z.string(), z.boolean()])) }))
+        .min(1)
+        .describe("Keyframes to set, applied in order"),
     },
   },
   {
@@ -182,6 +193,24 @@ export const tools = [
     paths: ["path"],
     returnsImage: true,
     timeoutMs: 600000,
+  },
+  {
+    name: "export_movie",
+    cmd: "export_movie",
+    description: "Render the timeline to a video file through the scene's camera, using the app's own movie export. The format follows the file extension: .mp4, .mov or .wmv. Answers when the file is written, which can take minutes; get_status shows export_frame of export_frames meanwhile, and other commands wait until it is done.",
+    shape: {
+      path: z.string().min(1).describe("Where to save the video, ending in .mp4, .mov or .wmv"),
+      overwrite,
+      start_frame: frame.optional().describe("First frame. Default 0"),
+      end_frame: frame.optional().describe("Last frame. Default: the end of the timeline"),
+      frame_rate: z.number().int().min(1).max(120).optional().describe("Frames per second of the video. Default: the project's tempo, so one timeline frame is one video frame"),
+      bit_rate: z.number().int().positive().optional().describe("Video bit rate. Default: the app's current export setting"),
+      high_quality: z.boolean().optional().describe("Use the full renderer (shadows, effects). Default true"),
+      include_audio: z.boolean().optional().describe("Include the project's audio tracks. Default true"),
+      include_hidden: z.boolean().optional().describe("Also render hidden objects. Default false"),
+    },
+    paths: ["path"],
+    timeoutMs: 3660000,
   },
   {
     name: "set_background",

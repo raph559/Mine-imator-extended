@@ -150,6 +150,12 @@ function render_high_shadows()
 				sampleoffset[Z] = lengthdir_z(dis, zang)
 			}
 			
+			// A black light, or one with neither diffuse nor specular strength, adds nothing to the image:
+			// skip its shadow maps and its lighting pass. (Checked after the random offset above, so the
+			// other lights keep the same sample positions as before.)
+			if (value[e_value.LIGHT_COLOR] = c_black || (value[e_value.LIGHT_STRENGTH] = 0 && value[e_value.LIGHT_SPECULAR_STRENGTH] = 0))
+				continue
+			
 			#region Point light
 			
 			if (type = e_tl_type.POINT_LIGHT)

@@ -48,7 +48,7 @@ function window_draw_export()
 	framey = floor(window_height/2 - frameh/2)
 	
 	gpu_set_tex_filter(true)
-	draw_surface_box_center(export_surface, framex, framey, framew, frameh)
+	draw_surface_box_center((surface_exists(export_preview_surface) ? export_preview_surface : export_surface), framex, framey, framew, frameh)
 	gpu_set_tex_filter(false)
 	
 	content_width = window_width

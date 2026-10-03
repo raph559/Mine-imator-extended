@@ -439,9 +439,11 @@ namespace CppProject
 		// Delete finished sounds
 		SoundInstance::CleanSounds();
 
-		// Schedule next step
+		// Schedule next step. An export has nothing to pace: every step renders part of a frame,
+		// so the next one starts as soon as pending events (input, the bridge) are handled
+		bool exporting = (global::_app->window_state == "export_movie" || global::_app->window_state == "export_image");
 		fpsTimer.Reset();
-		stepTimer.start(1000.0 / gmlGlobal::room_speed, this);
+		stepTimer.start(exporting ? 0 : 1000.0 / gmlGlobal::room_speed, this);
 	}
 
 	IntType AppHandler::GetMsec() const

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { after, before, test } from "node:test";
-import { newProject, startApp, tmpDir } from "./harness.mjs";
+import { decodePng, newProject, startApp, tmpDir } from "./harness.mjs";
 
 let app, call;
 const out = tmpDir();
@@ -85,4 +85,30 @@ test("set_background changes and reports background settings", async () => {
   await assert.rejects(call("set_background", { sky_color: "#zzzzzz" }), (err) => err.code === "bad_args");
   assert.equal((await call("set_background", {})).sky_color, "#102030");
   assert.equal((await call("set_background", {})).ground_show, false);
+});
+
+// A high-quality export renders its samples without finishing the image after each one;
+// the saved image must still be the finished one: every sample in, post effects applied
+test("a high-quality export_image is the finished image: samples accumulated, camera effects applied", async () => {
+  await call("set_project_settings", { settings: { video_width: 320, video_height: 180, render_samples: 6 } });
+  const cam = await call("create_object", { type: "camera" });
+  await call("set_values", { id: cam.id, frame: 0, values: { pos_x: 0, pos_y: -200, pos_z: 40, rot_x: 0, rot_z: 0 } });
+  await call("select", { ids: [] });
+  const corner = async (name, values) => {
+    await call("set_values", { id: cam.id, frame: 0, values });
+    await call("select", { ids: [] });
+    const path = `${out}/${name}.png`;
+    await call("export_image", { path, high_quality: true, overwrite: true }, { timeoutMs: 120000 });
+    const image = decodePng(readFileSync(path));
+    let sum = 0;
+    for (let y = 0; y < 12; y++) for (let x = 0; x < 12; x++) for (let c = 0; c < 3; c++) sum += image.data[(y * image.width + x) * image.channels + c];
+    return { sum, bytes: readFileSync(path) };
+  };
+  const plain = await corner("hq-plain", { cam_vignette: false });
+  const vignette = await corner("hq-vignette", { cam_vignette: true, cam_vignette_strength: 1 });
+  assert.ok(vignette.sum < plain.sum * 0.8, `the vignette darkens the corner (${vignette.sum} against ${plain.sum})`);
+  // Same scene, same settings: the same image
+  const again = await corner("hq-vignette-again", { cam_vignette: true, cam_vignette_strength: 1 });
+  assert.ok(vignette.bytes.equals(again.bytes), "two exports of the same frame are identical");
+  assert.equal((await call("get_status")).window_state, "");
 });

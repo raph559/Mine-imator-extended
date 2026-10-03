@@ -42,9 +42,6 @@ function export_update()
 		}
 	}
 	
-	if (window_state = "export_image")
-		app_update_cameras(popup_exportimage.high_quality, false)
-	
 	// Render
 	if (window_state = "export_movie")
 	{
@@ -57,25 +54,51 @@ function export_update()
 		render_quality = (popup_exportimage.high_quality ? e_view_mode.RENDER : e_view_mode.SHADED)
 	}
 	
-	if (window_state = "export_movie" && exportmovie_format = "png")
-		render_start(export_surface, timeline_camera)
-	else
-		render_start(export_surface, timeline_camera, project_video_width, project_video_height)
-	
-	if (render_quality = e_view_mode.RENDER)
-		render_high()
-	else
+	// A frame is made of many samples. Render as many as fit in a short time slice,
+	// then let the window redraw its progress and check for Escape
+	var slicestart = current_time;
+	while (true)
 	{
-		render_low()
-		render_samples_done = true
+		if (window_state = "export_image")
+			app_update_cameras(popup_exportimage.high_quality, false)
+		
+		if (window_state = "export_movie" && exportmovie_format = "png")
+			render_start(export_surface, timeline_camera)
+		else
+			render_start(export_surface, timeline_camera, project_video_width, project_video_height)
+		
+		if (render_quality = e_view_mode.RENDER)
+		{
+			// Only the last sample's image is saved. A finished image is still made twice a second for the preview
+			render_last_sample_only = (current_time - export_preview_time < 500)
+			render_high()
+			render_last_sample_only = false
+		}
+		else
+		{
+			render_low()
+			render_samples_done = true
+			render_image_ready = true
+		}
+		
+		export_surface = render_done()
+		
+		// Keep a copy of the finished image for the export window
+		if (render_image_ready)
+		{
+			export_preview_surface = surface_require(export_preview_surface, surface_get_width(export_surface), surface_get_height(export_surface))
+			surface_copy(export_preview_surface, 0, 0, export_surface)
+			export_preview_time = current_time
+		}
+		
+		export_sample++
+		
+		if (render_quality = e_view_mode.RENDER && render_samples = app.project_render_samples)
+			render_samples_done = true
+		
+		if (render_samples_done || current_time - slicestart >= 25)
+			break
 	}
-	
-	export_surface = render_done()
-	
-	export_sample++
-	
-	if (render_quality = e_view_mode.RENDER && render_samples = app.project_render_samples)
-		render_samples_done = true
 	
 	if (!render_samples_done)
 		return 1

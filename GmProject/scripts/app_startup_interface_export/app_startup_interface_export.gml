@@ -3,6 +3,8 @@
 function app_startup_interface_export()
 {
 	export_surface = null
+	export_preview_surface = null
+	export_preview_time = 0
 	export_sample = 0
 	export_filename = ""
 	export_escape_time = 0

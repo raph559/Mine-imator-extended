@@ -84,10 +84,15 @@ function render_high()
 		render_high_samples_add()
 	}
 	
-	render_high_samples_unpack()
+	// A caller that only keeps the image of the last sample (an export) does not need the samples
+	// unpacked and the post effects applied after every sample in between: that work would be thrown away
+	render_image_ready = !(render_last_sample_only && !render_samples_done && render_samples < app.project_render_samples)
+	
+	if (render_image_ready)
+		render_high_samples_unpack()
 	
 	// Apply post effects (Bloom, glow, color correction, etc.)
-	if (!render_pass)
+	if (render_image_ready && !render_pass)
 	{
 		var prevsurf;
 		render_surface[0] = surface_require(render_surface[0], render_width, render_height)

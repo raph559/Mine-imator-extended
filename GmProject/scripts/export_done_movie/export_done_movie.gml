@@ -14,6 +14,10 @@ function export_done_movie(cancel = false)
 	
 	surface_free(export_surface)
 	export_surface = null
+	if (surface_exists(export_preview_surface))
+		surface_free(export_preview_surface)
+	export_preview_surface = null
+	export_preview_time = 0
 	window_state = ""
 	
 	render_watermark = false

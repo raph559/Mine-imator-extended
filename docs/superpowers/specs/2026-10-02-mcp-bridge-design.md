@@ -1,8 +1,8 @@
 # Mine-imator MCP bridge — design
 
 Date: 2026-10-02, brought up to date 2026-10-03 (all roadmap phases built)
-Branch history: `mcp-bridge`, then one branch per phase, merged into local `master`
-(forked from upstream `master` at `eda12dd0`; nothing is pushed to upstream)
+Branch history: `mcp-bridge`, then one branch per phase, merged into local `main`
+(forked from upstream `master` at `eda12dd0`; `main` does not track upstream and nothing is pushed there)
 
 ## Goal
 

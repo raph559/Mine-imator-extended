@@ -2968,7 +2968,7 @@ Run: `node --test test/app/08-acceptance.test.mjs`. Expected: 1 passing, and the
 
 - [ ] **Step 2: Compatibility check with the official build**
 
-Copy the saved `acceptance` project folder to `C:\Users\raphr\Mine-imator\Projects\` and ask the user to open it in official Mine-imator 2.0.2. Expected: it opens with the character and camera and their keyframes. Record the outcome in the spec's "Open risks" section.
+Copy the saved `acceptance` project folder to the `Projects` folder of the official install and ask the user to open it in official Mine-imator 2.0.2. Expected: it opens with the character and camera and their keyframes. Record the outcome in the spec's "Open risks" section.
 
 - [ ] **Step 3: Registration and README**
 

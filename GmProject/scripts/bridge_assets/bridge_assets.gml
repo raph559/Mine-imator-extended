@@ -511,6 +511,60 @@ function bridge_cmd_import_model(args)
 	return bridge_ok(bridge_tl_summary(tl))
 }
 
+/// bridge_cmd_import_asset(args)
+/// @arg args
+/// @desc Adds the objects of an .miobject or .miproject file to the project, as Import asset does. One undo step.
+
+function bridge_cmd_import_asset(args)
+{
+	var fn, err, map, problem, hobj, objects, inst, result;
+	fn = bridge_arg(args, "path", "")
+	err = bridge_file_error(fn, array(".miobject", ".miproject"))
+	if (err >= 0)
+		return err
+
+	// What the loader checks before it starts, checked here so a bad file gets a plain answer and leaves no undo step
+	problem = ""
+	map = json_load(string(fn))
+	if (!ds_map_valid(map))
+		problem = "it is not valid JSON"
+	else
+	{
+		if (!is_real(map[?"format"]))
+			problem = "it has no format"
+		else if (map[?"format"] > project_format)
+			problem = "it was saved by a newer Mine-imator"
+		else if (map[?"format"] < e_project.FORMAT_110_PRE_1)
+			problem = "its format is too old"
+		ds_map_destroy(map)
+	}
+	if (problem != "")
+		return bridge_error("bad_args", "Could not load " + filename_name(fn) + ": " + problem)
+
+	if (!asset_load(string(fn)))
+	{
+		bridge_undo_last_load(asset_load)
+		return bridge_error("bad_args", "Could not load " + filename_name(fn) + (bridge_quiet_message != "" ? ": " + bridge_quiet_message : ""))
+	}
+
+	// The undo step of the load lists what it added. Body parts are left to get_scene: a rig can have hundreds
+	hobj = history[0]
+	objects = ds_list_create()
+	for (var i = 0; i < hobj.loaded_amount; i++)
+	{
+		inst = save_id_find(hobj.loaded_save_id[i])
+		if (inst = null || inst.object_index != obj_timeline || inst.part_of != null)
+			continue
+		ds_list_add(objects, bridge_tl_summary(inst))
+		ds_list_mark_as_map(objects, ds_list_size(objects) - 1)
+	}
+
+	result = ds_map_create()
+	ds_map_add_list(result, "objects", objects)
+	result[?"undo_steps"] = 1
+	return bridge_ok(result)
+}
+
 /// bridge_cmd_import_scenery(args)
 /// @arg args
 /// @desc Adds a .schematic, .nbt or .blocks file as a scenery object. The app builds it over several frames,

@@ -23,6 +23,10 @@ function project_reset_loaded()
 	
 	with (obj_keyframe)
 		loaded = false
-	
+
+	// Without this, every later asset load adds the project's markers to the marker list again
+	with (obj_marker)
+		loaded = false
+
 	loaded = false
 }

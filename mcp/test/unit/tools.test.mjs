@@ -20,7 +20,7 @@ test("every bridge command has a tool", () => {
     "set_frame", "set_values", "set_keyframes", "remove_keyframes", "move_keyframes",
     "set_work_camera", "play", "stop", "screenshot", "export_image", "export_movie", "set_background", "get_project_settings", "set_project_settings",
     "duplicate_object", "copy_keyframes", "set_view_camera", "set_marker", "remove_marker", "set_loop",
-    "set_skin", "import_model", "import_scenery", "import_image", "list_resources", "remove_resource", "import_sound", "import_world",
+    "set_skin", "import_model", "import_scenery", "import_image", "list_resources", "remove_resource", "import_sound", "import_world", "import_asset",
     "add_particle_type", "set_particle_type", "remove_particle_type", "duplicate_particle_type"];
   assert.deepEqual(tools.map((t) => t.cmd).sort(), commands.sort());
 });

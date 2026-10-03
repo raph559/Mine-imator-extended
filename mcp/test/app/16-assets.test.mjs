@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { copyFileSync, existsSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
 import path from "node:path";
 import { after, before, test } from "node:test";
@@ -204,6 +204,78 @@ test("importing the same file twice keeps both, without asking", async () => {
   assert.equal((await call("get_status")).window_state, "");
 });
 
+test("import_asset adds the objects of a .miobject or .miproject file, with their keyframes, in one undo step", async () => {
+  // A saved project stands in for a shared rig: an .miobject has the same layout
+  const folder = tmpDir();
+  await call("project_new", { name: "rig", folder, discard: true });
+  const arm = await call("create_object", { type: "cube", name: "Rig arm" });
+  await call("set_keyframes", { keyframes: [{ id: arm.id, frame: 0, values: { pos_z: 4 } }, { id: arm.id, frame: 12, values: { pos_z: 20, rot_x: 45 } }] });
+  const hand = await call("create_object", { type: "sphere", name: "Rig hand" });
+  await call("set_parent", { id: hand.id, parent: arm.id });
+  await call("project_save");
+  copyFileSync(`${folder}/rig.miproject`, `${dir}/rig.miobject`);
+
+  await newProject(app.client);
+  await call("create_object", { type: "cube", name: "Already here" });
+  const before = (await call("get_scene")).objects.length;
+  const steps = await undoSteps();
+
+  const added = await call("import_asset", { path: `${dir}/rig.miobject` });
+  assert.equal(added.undo_steps, 1);
+  assert.deepEqual(added.objects.map((o) => o.name).sort(), ["Rig arm", "Rig hand"]);
+  const newArm = added.objects.find((o) => o.name === "Rig arm"), newHand = added.objects.find((o) => o.name === "Rig hand");
+  assert.deepEqual(newArm.frames, [0, 12]);
+  assert.equal(newHand.parent, newArm.id);
+  assert.equal((await call("get_object", { id: newArm.id })).keyframes.find((k) => k.frame === 12).values.rot_x, 45);
+  assert.equal((await call("get_scene")).objects.length, before + 2);
+  assert.equal(await undoSteps(), steps + 1);
+
+  // A project file works the same way, and a second copy does not replace the first
+  const again = await call("import_asset", { path: `${folder}/rig.miproject` });
+  assert.equal(again.objects.length, 2);
+  assert.notEqual(again.objects.find((o) => o.name === "Rig arm").id, newArm.id);
+  assert.equal((await call("get_scene")).objects.length, before + 4);
+
+  await call("undo", { steps: 2 });
+  assert.equal((await call("get_scene")).objects.length, before);
+});
+
+test("import_asset refuses broken, too new and unsupported files without a dialog or a leftover object", async () => {
+  writeFileSync(`${dir}/garbage.miobject`, "this is not an object");
+  writeFileSync(`${dir}/noformat.miobject`, JSON.stringify({ timelines: [] }));
+  const rig = JSON.parse(readFileSync(`${dir}/rig.miobject`, "utf8"));
+  writeFileSync(`${dir}/future.miobject`, JSON.stringify({ ...rig, format: 9999 }));
+  const before = (await call("get_scene")).objects.length;
+  const steps = await undoSteps();
+  for (const name of ["garbage", "noformat", "future"])
+    await assert.rejects(call("import_asset", { path: `${dir}/${name}.miobject` }), (err) => err.code === "bad_args", name);
+  await assert.rejects(call("import_asset", { path: `${dir}/missing.miobject` }), (err) => err.code === "not_found");
+  await assert.rejects(call("import_asset", { path: `${dir}/skin.png` }), (err) => err.code === "bad_args");
+  await assert.rejects(call("import_asset", {}), (err) => err.code === "bad_args");
+  assert.equal((await call("get_scene")).objects.length, before);
+  assert.equal(await undoSteps(), steps);
+  assert.equal((await call("get_status")).window_state, "");
+});
+
+test("importing an asset into a reopened project leaves its markers alone", async () => {
+  // Markers loaded from a project file used to be added to the timeline a second time by every later import,
+  // and deleting one then crashed the app
+  const folder = tmpDir();
+  await call("project_new", { name: "marked", folder, discard: true });
+  await call("set_marker", { frame: 5, name: "Hit" });
+  await call("set_marker", { frame: 20, name: "Fall" });
+  await call("project_save");
+  await call("project_open", { path: `${folder}/marked.miproject`, discard: true });
+
+  await call("import_asset", { path: `${dir}/rig.miobject` });
+  await call("import_asset", { path: `${dir}/rig.miobject` });
+  assert.deepEqual((await call("get_scene")).markers.map((m) => m.frame), [5, 20]);
+
+  assert.deepEqual(await call("remove_marker", { frame: 5 }), { removed: 1 });
+  assert.deepEqual((await call("get_scene")).markers.map((m) => m.frame), [20]);
+  assert.equal((await call("get_status")).window_state, "");
+  await newProject(app.client);
+});
 
 test("a project whose model file is missing still opens, without a dialog", async () => {
   const folder = tmpDir();

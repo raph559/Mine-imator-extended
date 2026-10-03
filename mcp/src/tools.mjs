@@ -502,6 +502,14 @@ export const tools = [
     paths: ["path"],
   },
   {
+    name: "import_asset",
+    cmd: "import_asset",
+    description: "Add everything in a Mine-imator object file (.miobject, the format rigs are shared in) or in another project (.miproject) to the open project: its objects with their hierarchy, keyframes and settings, and the models, textures and other files they use, taken from the same folder. Returns objects (every object added that is not a body part, each with id, name, type, parent and keyframe frames; get_scene shows the body parts) and undo_steps (1). Rigs often bring a helper object to delete and say so in its name. A broken file, or one saved by a newer Mine-imator, is refused and nothing is added.",
+    shape: { path: z.string().min(1).describe("Full path of the .miobject or .miproject file") },
+    paths: ["path"],
+    timeoutMs: 120000,
+  },
+  {
     name: "import_scenery",
     cmd: "import_scenery",
     description: "Add a building or terrain saved as a .schematic, .nbt (structure block) or .blocks file to the scene as a scenery object, and wait until the app has built it. Mine-imator ships some under its Schematics folder. Returns the new object and its size in blocks [x, y, z]. A broken file is refused and nothing is added.",

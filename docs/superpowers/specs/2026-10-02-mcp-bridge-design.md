@@ -20,7 +20,8 @@ project, and export a frame or a movie, without touching the mouse or keyboard.
 
 - Mine-imator has no automation interface. Its UI is immediate-mode and drawn
   by the app, so there is nothing external to hook.
-- The source is MIT. Logic is GML in `GmProject/scripts`, transpiled to C++ by
+- The source is public on GitHub (it was MIT until 2.0.0 removed the license in
+  2023; see the README). Logic is GML in `GmProject/scripts`, transpiled to C++ by
   CppGen at build time. GML built-ins are declared in `CppGen/gml.json` and
   implemented in `CppProject/Gml/`.
 - The UI mutates state through `action_*` scripts (about 780). They are plain

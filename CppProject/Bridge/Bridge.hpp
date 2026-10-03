@@ -47,6 +47,7 @@ namespace CppProject
 			QJsonValue id;
 			QString cmd;
 			QString argsJson;
+			qint64 queuedMs = 0; // When it was received, for the wait while the person drags
 		};
 
 		struct Notice
@@ -76,5 +77,8 @@ namespace CppProject
 		qint64 pendingTimeoutMs = 10 * 60 * 1000; // Default limit, MINEIMATOR_BRIDGE_PENDING_TIMEOUT_MS overrides
 		bool pendingTimeoutFixed = false; // Set from the environment: commands cannot extend it
 		qint64 waitingTimeoutMs = 0; // Limit of the command being waited for
+
+		// Commands wait while the person drags something in the app, up to this long
+		qint64 dragWaitMs = 60 * 1000; // MINEIMATOR_BRIDGE_DRAG_WAIT_MS overrides
 	};
 }

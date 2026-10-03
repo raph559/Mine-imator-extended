@@ -12,6 +12,10 @@ function bridge_startup()
 
 	bridge_pending_kind = ""
 	bridge_skin_sources = ds_map_create()
+
+	// Only the tests turn this on: lets them pretend that the person is dragging
+	bridge_testing = (environment_get_variable("MINEIMATOR_BRIDGE_TESTING") = "1")
+	bridge_test_drag = false
 	bridge_skin_http = null
 	bridge_skin_done = false
 	bridge_skin_ok = false

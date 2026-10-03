@@ -7,6 +7,7 @@
 
 #include <QJsonArray>
 #include <QJsonDocument>
+#include <QDateTime>
 
 namespace CppProject
 {
@@ -79,6 +80,10 @@ namespace CppProject
 			pendingTimeoutMs = value;
 			pendingTimeoutFixed = true;
 		}
+
+		value = qEnvironmentVariableIntValue("MINEIMATOR_BRIDGE_DRAG_WAIT_MS", &ok);
+		if (ok && value > 0)
+			dragWaitMs = value;
 
 		connect(&server, &QTcpServer::newConnection, this, [this]()
 		{
@@ -192,7 +197,7 @@ namespace CppProject
 			return;
 		}
 
-		queue.enqueue({ socket, id, cmd, QString(QJsonDocument(args.toObject()).toJson(QJsonDocument::Compact)) });
+		queue.enqueue({ socket, id, cmd, QString(QJsonDocument(args.toObject()).toJson(QJsonDocument::Compact)), QDateTime::currentMSecsSinceEpoch() });
 	}
 
 	void Bridge::ProcessPending()
@@ -239,6 +244,16 @@ namespace CppProject
 				if (waiting && request.cmd != "get_status")
 				{
 					deferred.enqueue(request);
+					continue;
+				}
+
+				// The person is dragging something with the mouse: let them finish, but not forever
+				if (VarType(bridge_should_wait(scope, StringType(request.cmd))).ToInt() > 0)
+				{
+					if (QDateTime::currentMSecsSinceEpoch() - request.queuedMs > dragWaitMs)
+						ReplyError(request.socket, request.id, "busy", "Mine-imator is busy: the mouse is being dragged in the app. Try again in a moment");
+					else
+						deferred.enqueue(request);
 					continue;
 				}
 

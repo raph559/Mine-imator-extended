@@ -168,8 +168,9 @@ takes `background: true`.
   projects, skins, settings, the upgrade key and the recent list alone. The
   official files were backed up before the first deploy. The build always uses
   `%APPDATA%\Mine-imator\Bridge` as its temp folder.
-- While a mouse drag is in progress in the app, commands still run. The app is a
-  single-person desktop tool and the person can see and undo every change.
+- While the person drags something with the mouse in the app, commands wait for
+  the button to be released (up to a minute, then `busy`), so nothing changes
+  under the cursor. Menus and popups do not hold commands back.
 
 ## Testing
 
@@ -191,5 +192,5 @@ takes `background: true`.
   release. Opening a project saved by the custom build in the official app has
   not been tried.
 - The upgrade-key state of the custom build has not been checked.
-- Some stock paths still rely on `window_busy` states the bridge does not look
-  at, so a command can land in the middle of a mouse drag.
+- Drag detection reads the app's own mouse and `window_busy` state; a drag
+  state the app does not report through `window_busy` would not be noticed.

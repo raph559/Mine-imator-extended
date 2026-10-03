@@ -17,7 +17,7 @@ export const tools = [
   {
     name: "get_status",
     cmd: "get_status",
-    description: "Report what Mine-imator is doing: version, open project, unsaved changes, current frame, playback, object count, undo steps, and how many clients are connected to the bridge. window_state is \"startup\" on the home screen and \"\" when a project is open.",
+    description: "Report what Mine-imator is doing: version, open project, unsaved changes, current frame, playback, object count, undo steps, how many clients are connected to the bridge, and user_dragging (the person is dragging something with the mouse in the app: other commands wait for a moment, up to a minute, then answer busy). window_state is \"startup\" on the home screen and \"\" when a project is open.",
     shape: {},
   },
   {

@@ -47,7 +47,7 @@ One JSON object per line: `{"id": 1, "cmd": "get_status", "args": {}}` returns `
 - The bridge never lets the app open a message box while a command runs: errors come back in the reply (or as a `warning` when the command still succeeded) and questions are answered no. So `project_open` also opens a project whose model files are missing, without a dialog.
 - `screenshot` and `export_image` attach the picture to the tool result only up to 3 MB; a bigger one stays at its path and the result says so.
 - Importing a box from a Minecraft world is not available.
-- Commands run even while the person is dragging something with the mouse in the app.
+- A command that arrives while the person is dragging something with the mouse in the app (a gizmo, keyframes, a panel edge) waits until they let go, up to a minute (`MINEIMATOR_BRIDGE_DRAG_WAIT_MS` overrides), then answers `busy`. Menus and popups do not count. `get_status` always answers and reports `user_dragging`.
 - While an export is running only `get_status` is answered; other commands wait for it. An export that takes longer than 10 minutes (`MINEIMATOR_BRIDGE_PENDING_TIMEOUT_MS` overrides) is answered with `timeout` and keeps running.
 
 ## Developing the bridge

@@ -40,7 +40,7 @@ use reorders priorities.
 | 5. Particles and audio | Particle spawners, sound tracks | Larger. Audio also closes the untested gap in movie export |
 | 6. Hardening | Deferred review items, remaining dialog paths, image size cap, refreshed design spec | Done |
 
-## Left over
+## Left over (planned 2026-10-03)
 
 Phase 6 fixed the review items: empty undo steps for a no-op `set_parent` and
 `move_keyframes`, skins reused only when it is the very same file, an image size
@@ -49,16 +49,36 @@ dialog on open), a stuck "quiet" state after an app error, marker name length,
 the sky image, and the design spec. Out-of-order replies are by design and are
 now documented.
 
-What is not done, in rough order of value:
+The upgrade key needs no work: the installed custom build finds the key file at
+startup (its log says "Found key_file") and the key passes the app's own offline
+check, so it behaves as the upgraded version.
 
-- Importing a box of blocks from a Minecraft world. No world exists on the
-  development machine to test with. The call sequence is known:
-  `action_res_import_world` then `action_res_scenery_animate`, set
-  `setting_world_import_filter_mode` too, and wait for `res.ready` as
-  `import_scenery` does.
-- Particle types, the per-type options of the app's particle editor. Spawners
-  come from presets, and custom presets made in the app can be used by path.
-- A drag in progress in the app is not detected; commands run regardless.
-- Opening a project saved by the custom build in the official app, and the
-  custom build's upgrade-key state, have not been checked.
-- The loop region and repeat mode are not undoable, as in the app.
+Remaining, in order. Each item gets its own branch, tests in background mode,
+and a question before commit and merge.
+
+1. **Wait while the user drags (done).** A command that arrives while the person is
+   dragging something with the mouse in the app (a gizmo, keyframes, a panel)
+   waits until the button is released, instead of changing state under the
+   cursor. Menus and popups do not count. After a minute it answers `busy`.
+   Tested through a test-only command, enabled by an environment variable, that
+   sets the drag state.
+2. **`import_world`.** A box of blocks from a Minecraft world folder
+   (`world_folder`, `dimension`, `from`, `to`, optional block filter), built
+   like `import_scenery`. No world exists on this machine, so the test writes a
+   tiny region file in the 1.18+ format. Risk: the importer may be stricter than
+   the fixture; trying a real world later is still worthwhile.
+   Call sequence: `action_res_import_world`, then `action_res_scenery_animate`,
+   set `setting_world_import_filter_mode` as well, wait for `res.ready`.
+3. **Particle types.** Table-driven (like the background settings): list a
+   spawner's types and their settings in `get_object`, `set_particle_type`
+   for any option with all-or-nothing validation and undo, and add, remove and
+   duplicate types. Common options first (sprite or template, amount, speed,
+   direction, gravity, colour, size, lifetime), then the random-range variants.
+   About 114 actions and 140 options in total.
+4. **Official app compatibility.** Open a project saved by the custom build in
+   the official app. The official app has no hidden mode, so this needs the
+   person (or a quiet moment). Offline part first: compare a saved project's
+   header and structure with one saved by the official app.
+
+Dropped: undoing the loop region and repeat mode, which the app does not undo
+either. Optional: an `upgraded` field in `get_status`.

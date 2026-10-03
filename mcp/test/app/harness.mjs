@@ -90,6 +90,8 @@ export function spawnApp({ args = ["--bridge"], env = {} } = {}) {
     env: {
       ...process.env,
       MINEIMATOR_BRIDGE_PORT: String(TEST_PORT),
+      MINEIMATOR_BRIDGE_TESTING: "1", // Enables test_set_drag
+      MINEIMATOR_BRIDGE_DRAG_WAIT_MS: "2000", // The real wait is a minute
       MINEIMATOR_BRIDGE_SKIN_URL: `http://127.0.0.1:${SKIN_TEST_PORT}/skin?username=`,
       ...env,
     },

@@ -85,6 +85,7 @@ function bridge_dispatch_command(cmd, args)
 		case "remove_marker": return bridge_cmd_remove_marker(args)
 		case "set_loop": return bridge_cmd_set_loop(args)
 		case "set_skin": return bridge_cmd_set_skin(args)
+		case "test_set_drag": return bridge_cmd_test_set_drag(args)
 		case "import_model": return bridge_cmd_import_model(args)
 		case "import_scenery": return bridge_cmd_import_scenery(args)
 		case "import_image": return bridge_cmd_import_image(args)
@@ -191,6 +192,7 @@ function bridge_cmd_get_status(args)
 	result[?"playing"] = (timeline_playing > 0)
 	result[?"object_count"] = instance_number(obj_timeline)
 	result[?"undo_steps"] = history_amount - history_pos
+	result[?"user_dragging"] = (bridge_user_dragging() > 0)
 	result[?"redo_steps"] = history_pos
 	result[?"view_camera"] = bridge_view_camera_name()
 	

@@ -83,17 +83,20 @@ and a question before commit and merge.
 Dropped: undoing the loop region and repeat mode, which the app does not undo
 either. Optional: an `upgraded` field in `get_status`.
 
-Particle types are done for everything except what a type is made of: a sprite
-sheet image (needs a way to import a particle sheet resource), a library object
-or text as the particle. The built-in sprites work.
+Particle types are complete: a type can be a built-in sprite, frames of a sprite
+sheet image (`import_image` with `as: "particle_sheet"`), or a copy of an object
+in the scene, including a text object with the type's own text.
 
-Upstream bugs found in Mine-imator itself while doing this. Two are fixed in the
-fork (the sprite angle actions recorded the scale actions for undo, so undoing a
-sprite angle edit changed the scale). Four are not touched, because the bridge
-does not reach them: `action_lib_item_tex_material` and `action_lib_item_tex_normal`
-record `action_lib_item_tex`, `action_lib_pc_spawn_region_path` records
-`action_lib_pc_type_temp`, and `action_project_render_bend_style` records
-`action_project_bend_style`. Undoing those would run the wrong action.
+Upstream bugs found in Mine-imator itself, all fixed in the fork:
+- Five actions recorded another action for undo, so undoing them ran the wrong
+  one: the particle sprite angle and angle change (undid the scale), the item
+  material and normal map textures (undid the item texture), and the particle
+  spawn region path (undid a particle type's kind). A scan of every action now
+  finds none left. (`action_project_render_bend_style` looked like a sixth, but
+  its file name differs from the function inside it, which records itself.)
+- A particle type made of a text object crashed the app as soon as it was
+  drawn: its text mesh fields were set up as a plain value instead of two slots.
+  This happens in the official app too, when the kind is picked in the editor.
 
 Item 4, what is known: a project saved by the custom build (Front flip) has the
 same format number (34), the same created_in (2.0.2) and the same top-level and

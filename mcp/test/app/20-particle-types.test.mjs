@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { after, before, test } from "node:test";
 import { particleTypeSettingNames } from "../../src/tools.mjs";
 import { setTimeout as sleep } from "node:timers/promises";
-import { countPixels, decodePng, newProject, startApp, tmpDir } from "./harness.mjs";
+import { countPixels, decodePng, newProject, png, startApp, tmpDir } from "./harness.mjs";
 
 let app, call, spawner;
 before(async () => {
@@ -42,6 +42,10 @@ test("every setting can be set and reads back the same", async () => {
 
   const wanted = {
     name: "Test type",
+    text: "Hello",
+    kind: "sheet",
+    sprite_sheet: "default",
+    sprite_sheet_image: first.sprite_sheet_image === 0 ? 1 : 0,
     spawn_rate: 40,
     sprite_template: sprite,
     sprite_animation_onend: "loop",
@@ -186,4 +190,76 @@ test("a type's colour shows in the picture", async () => {
   const green = await redPixels("#00FF00");
   assert.ok(red > 40, `red particles: ${red} red pixels`);
   assert.ok(green < 10, `green particles: ${green} red pixels`);
+});
+
+test("a particle type can be a sprite sheet image, an object of the scene, or a text", async () => {
+  const [first] = await types();
+  const dir = tmpDir();
+  writeFileSync(`${dir}/sheet.png`, png(64, 64, [20, 60, 230, 255]));
+  const sheet = await call("import_image", { path: `${dir}/sheet.png`, as: "particle_sheet" });
+  assert.equal(sheet.type, "particlesheet");
+  const cube = await call("create_object", { type: "cube", name: "Particle cube" });
+  const label = await call("create_object", { type: "text" });
+  const hero = await call("create_object", { type: "character" });
+  const arm = (await call("get_scene")).objects.find((o) => o.part_of === hero.id);
+
+  const steps = await undoSteps();
+  let now = await call("set_particle_type", { id: spawner.id, type: first.id, settings: { kind: "sheet", sprite_sheet: sheet.id, sprite_frame_width: 64, sprite_frame_height: 64, sprite_frame_start: 0, sprite_frame_end: 0 } });
+  assert.deepEqual([now.kind, now.sprite_sheet], ["sheet", sheet.id]);
+  assert.equal((await call("list_resources")).resources.find((r) => r.id === sheet.id).used, true);
+
+  now = await call("set_particle_type", { id: spawner.id, type: first.id, settings: { kind: cube.id } });
+  assert.equal(now.kind, cube.id);
+
+  now = await call("set_particle_type", { id: spawner.id, type: first.id, settings: { kind: label.id, text: "Pop!" } });
+  assert.deepEqual([now.kind, now.text], [label.id, "Pop!"]);
+
+  // A body part stands for its character
+  assert.equal((await call("set_particle_type", { id: spawner.id, type: first.id, settings: { kind: arm.id } })).kind, hero.id);
+
+  await call("undo", { steps: (await undoSteps()) - steps });
+  assert.equal((await types())[0].kind, first.kind);
+});
+
+test("a sprite sheet image shows in the picture", async () => {
+  const dots = await call("create_object", { type: "particles", preset: "default", name: "Blue dots" });
+  const dir = tmpDir();
+  writeFileSync(`${dir}/blue.png`, png(16, 16, [20, 60, 230, 255]));
+  const sheet = await call("import_image", { path: `${dir}/blue.png`, as: "particle_sheet" });
+  for (const type of (await call("get_object", { id: dots.id })).particle_types)
+    await call("set_particle_type", { id: dots.id, type: type.id, settings: { kind: "sheet", sprite_sheet: sheet.id, sprite_frame_width: 16, sprite_frame_height: 16, sprite_frame_start: 0, sprite_frame_end: 0, color: "#FFFFFF", alpha: 1, scale: 4 } });
+
+  await call("select", { ids: [] });
+  await call("set_work_camera", { focus: [0, 0, 60], angle_xy: 200, angle_z: 20, zoom: 220 });
+  await call("set_frame", { frame: 0 });
+  await call("play");
+  await sleep(2500);
+  await call("stop");
+  const path = `${dir}/blue-dots.png`;
+  await call("screenshot", { path });
+  const blue = countPixels(decodePng(readFileSync(path)), (r, g, b) => b > 170 && r < 70 && g < 110);
+  assert.ok(blue > 40, `blue pixels: ${blue}`);
+  await call("remove_object", { id: dots.id });
+});
+
+test("particle kinds are checked before anything changes", async () => {
+  const [first] = await types();
+  const camera = await call("create_object", { type: "camera" });
+  const dir = tmpDir();
+  writeFileSync(`${dir}/plain.png`, png(8, 8));
+  const texture = await call("import_image", { path: `${dir}/plain.png` });
+  const steps = await undoSteps();
+  const set = (settings, code) => assert.rejects(call("set_particle_type", { id: spawner.id, type: first.id, settings: { scale: 7, ...settings } }), (err) => err.code === code, JSON.stringify(settings));
+
+  await set({ kind: "no-such-object" }, "not_found");
+  await set({ kind: camera.id }, "bad_args");
+  await set({ kind: spawner.id }, "bad_args");
+  await set({ kind: "" }, "bad_args");
+  await set({ sprite_sheet: "no-such-resource" }, "not_found");
+  await set({ sprite_sheet: texture.id }, "bad_args");
+  await set({ sprite_sheet_image: 2 }, "bad_args");
+  await set({ text: 5 }, "bad_args");
+  await set({ text: "x".repeat(1001) }, "bad_args");
+  await assert.rejects(call("import_image", { path: `${dir}/plain.png`, as: "sky" }), (err) => err.code === "bad_args");
+  assert.equal(await undoSteps(), steps);
 });

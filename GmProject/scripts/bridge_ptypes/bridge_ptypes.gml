@@ -114,12 +114,59 @@ function bridge_color_range_error(val, name)
 	return msg
 }
 
+/// bridge_ptype_kind_target(id)
+/// @arg id
+/// @desc The library template that an object id (or a template id) stands for as a particle kind.
+/// null if there is no such object, 0 if it cannot be used as a particle.
+
+function bridge_ptype_kind_target(saveid)
+{
+	var obj = save_id_find(string(saveid));
+	if (obj = null || !instance_exists(obj))
+		return null
+
+	if (obj.object_index = obj_timeline)
+	{
+		if (obj.part_of != null)
+			obj = obj.part_of
+		obj = obj.temp
+		if (obj = null || !instance_exists(obj))
+			return 0
+	}
+
+	if (obj.object_index != obj_template || obj.type = e_temp_type.PARTICLE_SPAWNER)
+		return 0
+
+	return obj
+}
+
+/// bridge_ptype_kind_name(kindtemp)
+/// @arg kindtemp
+/// @desc How a particle type's kind reads over the bridge: sprite, sheet, or the id of the object it uses.
+
+function bridge_ptype_kind_name(kindtemp)
+{
+	if (kindtemp = particle_template)
+		return "sprite"
+	if (kindtemp = particle_sheet)
+		return "sheet"
+	if (kindtemp = null || !instance_exists(kindtemp))
+		return "sprite"
+
+	// The object that uses this template, or else the template itself
+	with (obj_timeline)
+		if (part_of = null && temp = kindtemp)
+			return save_id
+
+	return kindtemp.save_id
+}
+
 /// bridge_ptype_names()
 /// @desc Every particle type setting the bridge exposes, in the order they are applied.
 
 function bridge_ptype_names()
 {
-	return array("name", "spawn_rate", "sprite_template", "sprite_animation_onend", "scale", "scale_add", "alpha", "alpha_add", "sprite_angle", "sprite_angle_add", "angle_speed", "angle_speed_add", "angle_speed_mul", "color_mix_time", "sprite_animation_speed", "angle", "spd", "spd_add", "spd_mul", "rot", "rot_spd", "rot_spd_add", "rot_spd_mul", "color", "color_mix", "spawn_region", "bounding_box", "bounce", "orbit", "color_mix_enabled", "sprite_template_still_frame", "sprite_template_random_frame", "sprite_template_reverse", "angle_extend", "spd_extend", "rot_extend", "rot_spd_extend", "bounce_factor", "sprite_frame_width", "sprite_frame_height", "sprite_frame_start", "sprite_frame_end")
+	return array("name", "text", "spawn_rate", "kind", "sprite_template", "sprite_sheet", "sprite_sheet_image", "sprite_animation_onend", "scale", "scale_add", "alpha", "alpha_add", "sprite_angle", "sprite_angle_add", "angle_speed", "angle_speed_add", "angle_speed_mul", "color_mix_time", "sprite_animation_speed", "angle", "spd", "spd_add", "spd_mul", "rot", "rot_spd", "rot_spd_add", "rot_spd_mul", "color", "color_mix", "spawn_region", "bounding_box", "bounce", "orbit", "color_mix_enabled", "sprite_template_still_frame", "sprite_template_random_frame", "sprite_template_reverse", "angle_extend", "spd_extend", "rot_extend", "rot_spd_extend", "bounce_factor", "sprite_frame_width", "sprite_frame_height", "sprite_frame_start", "sprite_frame_end")
 }
 
 /// bridge_ptype_kind(name)
@@ -131,8 +178,12 @@ function bridge_ptype_kind(name)
 	switch (name)
 	{
 		case "name": return "text"
+		case "text": return "longtext"
 		case "spawn_rate": return "spawnrate"
+		case "kind": return "kind"
 		case "sprite_template": return "sprite"
+		case "sprite_sheet": return "sheet"
+		case "sprite_sheet_image": return "sheetimage"
 		case "sprite_animation_onend": return "onend"
 		case "scale": return "range"
 		case "scale_add": return "range"
@@ -189,6 +240,10 @@ function bridge_ptype_map(p)
 	m[?"name"] = p.name
 	m[?"spawn_rate"] = bridge_real(p.spawn_rate * 100)
 	m[?"sprite_template"] = p.sprite_template
+	m[?"kind"] = bridge_ptype_kind_name(p.temp)
+	m[?"sprite_sheet"] = (p.sprite_tex = mc_res ? "default" : p.sprite_tex.save_id)
+	m[?"sprite_sheet_image"] = p.sprite_tex_image
+	m[?"text"] = p.text
 	if (p.sprite_animation_onend = 1)
 		m[?"sprite_animation_onend"] = "loop"
 	else if (p.sprite_animation_onend = 2)
@@ -383,6 +438,44 @@ function bridge_ptype_error(name, val, settings)
 				return "name must be a text of 1 to 100 characters"
 			return ""
 
+		case "longtext":
+			if (!is_string(val) || string_length(val) > 1000)
+				return "text must be a text of up to 1000 characters"
+			return ""
+
+		case "kind":
+		{
+			if (!is_string(val) || val = "")
+				return "kind must be sprite, sheet, or the id of an object to use as the particle"
+			if (val = "sprite" || val = "sheet")
+				return ""
+			var target = bridge_ptype_kind_target(val);
+			if (target = null)
+				return "Unknown object " + string(val) + " for kind"
+			if (target = 0)
+				return "That object cannot be used as a particle (cameras, lights, folders and particle spawners cannot)"
+			return ""
+		}
+
+		case "sheet":
+		{
+			if (!is_string(val) || val = "")
+				return "sprite_sheet must be default, or the id of an image added with import_image as particle_sheet"
+			if (val = "default")
+				return ""
+			var sheet = bridge_find_res(val);
+			if (sheet = null)
+				return "Unknown resource " + string(val) + " for sprite_sheet, see list_resources"
+			if (sheet.type != e_res_type.PARTICLE_SHEET && sheet.type != e_res_type.PACK)
+				return "sprite_sheet must be an image added with import_image as particle_sheet, or a pack"
+			return ""
+		}
+
+		case "sheetimage":
+			if (!is_real(val) || is_bool(val) || (val != 0 && val != 1))
+				return "sprite_sheet_image must be 0 or 1 (which of a pack's two particle sheets)"
+			return ""
+
 		case "spawnrate":
 			if (!is_real(val) || is_bool(val) || val < 0 || val > 100)
 				return "spawn_rate must be a percentage from 0 to 100"
@@ -455,6 +548,40 @@ function bridge_ptype_apply(p, name, val)
 		case "name":
 			if (p.name != val)
 				action_lib_pc_type_name(string(val))
+			break
+
+		case "text":
+			if (p.text != val)
+				action_lib_pc_type_text(string(val))
+			break
+
+		case "kind":
+		{
+			var target;
+			if (val = "sprite")
+				target = particle_template
+			else if (val = "sheet")
+				target = particle_sheet
+			else
+				target = bridge_ptype_kind_target(val)
+			if (p.temp != target)
+				action_lib_pc_type_temp(target)
+			break
+		}
+
+		case "sprite_sheet":
+		{
+			var sheet = mc_res;
+			if (val != "default")
+				sheet = bridge_find_res(val)
+			if (p.sprite_tex != sheet)
+				action_lib_pc_type_sprite_tex(sheet)
+			break
+		}
+
+		case "sprite_sheet_image":
+			if (p.sprite_tex_image != round(val))
+				action_lib_pc_type_sprite_tex_image(round(val))
 			break
 
 		case "spawn_rate":

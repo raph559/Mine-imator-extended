@@ -134,8 +134,9 @@ function ptype_event_create()
 	bounce_factor = 0.5
 	orbit = false
 	
-	text_vbuffer = null
-	text_texture = null
+	// Two slots each, as render_generate_text fills them (text and outline)
+	text_vbuffer = [null, null]
+	text_texture = [null, null]
 	text_string = ""
 	text_res = null
 	text_3d = false

@@ -84,6 +84,9 @@ test("input shapes reject bad input and accept good input", () => {
   assert.ok(!ptype.safeParse({ id: "a", type: "t", settings: { colour: "#112233" } }).success);
   assert.ok(!ptype.safeParse({ id: "a", type: "t", settings: { color: "red" } }).success);
   assert.ok(z.object(tool("add_particle_type").shape).safeParse({ id: "a" }).success);
+  assert.ok(ptype.safeParse({ id: "a", type: "t", settings: { kind: "sheet", sprite_sheet: "default", sprite_sheet_image: 1, text: "Hi" } }).success);
+  assert.ok(!ptype.safeParse({ id: "a", type: "t", settings: { sprite_sheet_image: 2 } }).success);
+  assert.ok(!z.object(tool("import_image").shape).safeParse({ path: "C:/a.png", as: "sky" }).success);
   const skin = z.object(tool("set_skin").shape);
   assert.ok(skin.safeParse({ id: "a", player: "Notch_2" }).success);
   assert.ok(!skin.safeParse({ id: "a", player: "not a name" }).success);

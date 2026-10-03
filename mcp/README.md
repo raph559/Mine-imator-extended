@@ -44,7 +44,7 @@ One JSON object per line: `{"id": 1, "cmd": "get_status", "args": {}}` returns `
 - Exported images carry the "Created with Mine-imator" watermark (no tool option yet).
 - `screenshot` includes the selection gizmos of the selected object; `export_image` does not.
 - Camera values and `sky_time` are rounded to 3 decimals.
-- Particle types can use the built-in sprites. A sprite sheet image, a library object or text as the particle is not available.
+- A particle type is a built-in sprite (`kind: "sprite"`), frames of a sprite sheet image (`kind: "sheet"`, with an image from `import_image` `as: "particle_sheet"`), or a copy of an object in the scene (`kind`: its id). A text object as the kind shows the type's `text`.
 - Random values in particle type settings are written as text `min..max`; reading gives the same text. Colours are `#RRGGBB` or `#RRGGBB..#RRGGBB`.
 - `import_world` has been tested only with small worlds written by the tests (1.18 and later chunk format), not with a real save. Older formats are read by the same importer as the app's own world import.
 - The bridge never lets the app open a message box while a command runs: errors come back in the reply (or as a `warning` when the command still succeeded) and questions are answered no. So `project_open` also opens a project whose model files are missing, without a dialog.

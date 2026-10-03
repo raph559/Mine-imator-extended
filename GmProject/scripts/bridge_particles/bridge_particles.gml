@@ -91,7 +91,7 @@ function bridge_ptype_settings_apply(tl, p, settings)
 
 function bridge_ptype_error_code(err)
 {
-	if (string_pos("Unknown sprite", err) = 1)
+	if (string_pos("Unknown sprite", err) = 1 || string_pos("Unknown object", err) = 1 || string_pos("Unknown resource", err) = 1)
 		return "not_found"
 	return "bad_args"
 }

@@ -21,8 +21,12 @@ const rangeNote = "A number, or min..max for a random value in that range.";
 const vectorNote = "[x, y, z], each a number, min..max, or null to leave that axis as it is.";
 const particleTypeShape = {
   name: z.string().min(1).max(100),
+  text: z.string().max(1000).describe("The text shown when kind is a text object"),
+  kind: z.string().min(1).describe("What each particle is: sprite (a built-in sprite, see sprite_template), sheet (frames from a sprite sheet image, see sprite_sheet and the sprite_frame settings), or the id of an object in the scene (a cube, item, block, text, character...) that each particle copies. Hide that object if it should not show itself"),
   spawn_rate: z.number().min(0).max(100).describe("Share of the spawner's particles that are of this type, in percent. The other types change to make room"),
   sprite_template: z.string().describe("The sprite, from list_names kind particle_sprites"),
+  sprite_sheet: z.string().min(1).describe("For kind sheet: default (the Minecraft particle sheet) or the id of an image added with import_image as particle_sheet"),
+  sprite_sheet_image: z.number().int().min(0).max(1).describe("For kind sheet with a pack: which of its two particle sheets"),
   sprite_animation_onend: z.enum(["stop", "loop", "reverse"]).describe("What a particle's sprite animation does at its last frame"),
   scale: range.describe("Size when it appears, 1 is normal. " + rangeNote),
   scale_add: range.describe("Size change per second. " + rangeNote),
@@ -528,8 +532,11 @@ export const tools = [
   {
     name: "import_image",
     cmd: "import_image",
-    description: "Add a PNG or JPEG image to the project as a texture resource. Returns the resource (id, type, name, file, used). Put it on a shape with set_object_settings texture.",
-    shape: { path: z.string().min(1).describe("Full path of the image") },
+    description: "Add a PNG or JPEG image to the project. As a texture (the default) it can go on a shape with set_object_settings texture, or be the sky image in set_background. As a particle_sheet it can be a particle type's sprite_sheet, cut into frames by the sprite_frame settings. Returns the resource (id, type, name, file, used).",
+    shape: {
+      path: z.string().min(1).describe("Full path of the image"),
+      as: z.enum(["texture", "particle_sheet"]).optional().describe("Default texture"),
+    },
     paths: ["path"],
   },
   {

@@ -52,7 +52,7 @@ function action_lib_item_tex_material(res)
 			}
 		}
 		
-		var hobj = history_set_res(action_lib_item_tex, fn, temp_edit.item_tex_material, res);
+		var hobj = history_set_res(action_lib_item_tex_material, fn, temp_edit.item_tex_material, res);
 		hobj.item_sheet_size = popup_importitemsheet.sheet_size
 	}
 	

@@ -618,7 +618,7 @@ function bridge_scenery_poll()
 
 function bridge_cmd_import_image(args)
 {
-	var fn, err, res;
+	var fn, err, res, kind, restype;
 	fn = bridge_arg(args, "path", "")
 	err = bridge_file_error(fn, array(".png", ".jpg", ".jpeg"))
 	if (err >= 0)
@@ -626,9 +626,17 @@ function bridge_cmd_import_image(args)
 	if (!bridge_is_image(string(fn)))
 		return bridge_error("bad_args", "The file is not a PNG or JPEG image")
 
-	action_res_image_load(string(fn), e_res_type.TEXTURE)
+	// A texture for shapes and the sky, or a sheet of particle sprites
+	kind = bridge_arg(args, "as", "texture")
+	if (!is_string(kind) || (kind != "texture" && kind != "particle_sheet"))
+		return bridge_error("bad_args", "as must be texture or particle_sheet")
+	restype = e_res_type.TEXTURE
+	if (kind = "particle_sheet")
+		restype = e_res_type.PARTICLE_SHEET
+
+	action_res_image_load(string(fn), restype)
 	res = bridge_loaded_find(obj_resource)
-	if (res = null || !res.texture || bridge_quiet_message != "")
+	if (res = null || (restype = e_res_type.TEXTURE && !res.texture) || (restype = e_res_type.PARTICLE_SHEET && !res.particles_texture[0]) || bridge_quiet_message != "")
 	{
 		bridge_undo_last_load(action_res_image_load)
 		return bridge_error("bad_args", "Could not load the image " + filename_name(fn))

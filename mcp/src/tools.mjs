@@ -92,12 +92,13 @@ export const tools = [
   {
     name: "project_open",
     cmd: "project_open",
-    description: "Open a .miproject file. Fails with unsaved_changes if the open project has unsaved work, unless discard is true.",
+    description: "Open a .miproject file. Fails with unsaved_changes if the open project has unsaved work, unless discard is true. Answers once the project's sounds and scenery are loaded, which can take a while for a large project.",
     shape: {
       path: z.string().min(1).describe("Full path of the .miproject file"),
       discard: z.boolean().optional().describe("Drop unsaved changes of the open project"),
     },
     paths: ["path"],
+    timeoutMs: 600000,
   },
   {
     name: "project_save",
@@ -504,10 +505,10 @@ export const tools = [
   {
     name: "import_asset",
     cmd: "import_asset",
-    description: "Add everything in a Mine-imator object file (.miobject, the format rigs are shared in) or in another project (.miproject) to the open project: its objects with their hierarchy, keyframes and settings, and the models, textures and other files they use, taken from the same folder. Returns objects (every object added that is not a body part, each with id, name, type, parent and keyframe frames; get_scene shows the body parts) and undo_steps (1). Rigs often bring a helper object to delete and say so in its name. A broken file, or one saved by a newer Mine-imator, is refused and nothing is added.",
+    description: "Add everything in a Mine-imator object file (.miobject, the format rigs are shared in) or in another project (.miproject) to the open project: its objects with their hierarchy, keyframes and settings, and the models, textures and other files they use, taken from the same folder. Returns objects (every object added that is not a body part, each with id, name, type, parent and keyframe frames; get_scene shows the body parts) and undo_steps (1). Rigs often bring a helper object to delete and say so in its name. A broken file, or one saved by a newer Mine-imator, is refused and nothing is added. Answers once the sounds and scenery the file brings are loaded.",
     shape: { path: z.string().min(1).describe("Full path of the .miobject or .miproject file") },
     paths: ["path"],
-    timeoutMs: 120000,
+    timeoutMs: 600000,
   },
   {
     name: "import_scenery",

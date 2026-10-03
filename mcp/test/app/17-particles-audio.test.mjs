@@ -1,13 +1,15 @@
 import assert from "node:assert/strict";
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, statSync, writeFileSync } from "node:fs";
 import { after, before, test } from "node:test";
 import { newProject, startApp, tmpDir } from "./harness.mjs";
 
-/** A mono 16-bit WAV file with a sine tone. */
+/** A mono 16-bit WAV file with a sine tone, or with noise when hz is 0. */
 function wav(seconds, rate = 44100, hz = 440) {
   const samples = Math.round(seconds * rate);
   const data = Buffer.alloc(samples * 2);
-  for (let i = 0; i < samples; i++) data.writeInt16LE(Math.round(Math.sin((2 * Math.PI * hz * i) / rate) * 12000), i * 2);
+  let seed = 12345;
+  const noise = () => ((seed = (seed * 1103515245 + 12345) >>> 0) / 2 ** 32) * 2 - 1;
+  for (let i = 0; i < samples; i++) data.writeInt16LE(Math.round((hz ? Math.sin((2 * Math.PI * hz * i) / rate) : noise()) * 12000), i * 2);
   const header = Buffer.alloc(44);
   header.write("RIFF", 0);
   header.writeUInt32LE(36 + data.length, 4);
@@ -36,6 +38,7 @@ before(async () => {
   dir = tmpDir();
   writeFileSync(`${dir}/beep.wav`, wav(1));
   writeFileSync(`${dir}/broken.wav`, "not audio at all");
+  writeFileSync(`${dir}/noise.wav`, wav(2, 44100, 0));
 });
 after(() => app?.stop());
 
@@ -159,4 +162,28 @@ test("particle requests are checked before anything changes", async () => {
     await assert.rejects(call("set_object_settings", { id: spawner.id, settings: s }), (err) => err.code === "bad_args", JSON.stringify(s));
   await assert.rejects(call("set_object_settings", { id: cube.id, settings: { spawn_amount: 5 } }), (err) => err.code === "bad_args");
   assert.equal(await undoSteps(), steps);
+});
+
+// Last in this file: it opens another project
+test("project_open answers once the project's sounds are loaded, so a movie exported right after has them", async () => {
+  await newProject(app.client);
+  const sound = await call("import_sound", { path: `${dir}/noise.wav` });
+  const track = await call("create_object", { type: "audio" });
+  await call("set_values", { id: track.id, frame: 0, values: { sound_obj: sound.id } });
+  const cube = await call("create_object", { type: "cube" });
+  await call("set_keyframes", { keyframes: [{ id: cube.id, frame: 0, values: { pos_x: 0 } }, { id: cube.id, frame: 24, values: { pos_x: 16 } }] });
+  const { project_file } = await call("project_save");
+
+  // Noise cannot be compressed away as a tone or silence can, so it shows in the size of the file
+  const movieSize = async (name, args) => {
+    await call("export_movie", { path: `${dir}/${name}.mp4`, start_frame: 0, end_frame: 24, high_quality: false, ...args });
+    return statSync(`${dir}/${name}.mp4`).size;
+  };
+  const mute = await movieSize("noise-mute", { include_audio: false });
+  const loud = await movieSize("noise-loud");
+  assert.ok(loud - mute > 8000, `the noise should take room in the movie (${loud} against ${mute} bytes)`);
+
+  await call("project_open", { path: project_file, discard: true });
+  const reopened = await movieSize("noise-reopened");
+  assert.ok(reopened - mute > (loud - mute) / 2, `the movie exported after project_open lost its sound (${reopened} bytes, ${loud} with the sound, ${mute} without)`);
 });

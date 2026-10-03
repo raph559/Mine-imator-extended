@@ -12,6 +12,7 @@ function bridge_startup()
 
 	bridge_pending_kind = ""
 	bridge_pending_world = false
+	bridge_pending_response = -1
 	bridge_world_mode_saved = false
 	bridge_world_prev_mode = 0
 	bridge_skin_sources = ds_map_create()
@@ -354,6 +355,9 @@ function bridge_reset(everything)
 	if (everything > 0)
 	{
 		bridge_pending_kind = ""
+		if (bridge_pending_response >= 0)
+			ds_map_destroy(bridge_pending_response)
+		bridge_pending_response = -1
 		bridge_world_restore_mode()
 	}
 }
@@ -562,7 +566,7 @@ function bridge_cmd_import_asset(args)
 	result = ds_map_create()
 	ds_map_add_list(result, "objects", objects)
 	result[?"undo_steps"] = 1
-	return bridge_ok(result)
+	return bridge_after_loading(bridge_ok(result))
 }
 
 /// bridge_cmd_import_scenery(args)
@@ -713,8 +717,56 @@ function bridge_pending_poll()
 		res = bridge_scenery_poll()
 	else if (bridge_pending_kind = "sound")
 		res = bridge_sound_poll()
+	else if (bridge_pending_kind = "load")
+		res = bridge_load_poll()
 	else
 		res = bridge_export_poll()
 	bridge_quiet = false
+	return res
+}
+
+/// bridge_after_loading(response)
+/// @arg response
+/// @desc The app loads the sounds, scenery and packs of a project or an asset over several steps, after the
+/// call that opened it has returned. What runs before that is over misses them: a movie exported then has no sound.
+/// Returns the response as it is when nothing is loading, otherwise a pending reply: bridge_pending_poll sends
+/// the response once the loading is over. A response of -1 stands for the status at that time.
+
+function bridge_after_loading(response)
+{
+	var res;
+	if (popup != popup_loading && ds_priority_size(load_queue) = 0)
+		return (response >= 0 ? response : bridge_cmd_get_status(-1))
+
+	bridge_pending_kind = "load"
+	bridge_pending_response = response
+	bridge_quiet_until = current_time + 600000
+
+	res = bridge_ok(ds_map_create())
+	res[?"pending"] = true
+	res[?"pending_timeout_ms"] = 600000
+	return res
+}
+
+/// bridge_load_poll()
+/// @desc Finishes a command that waits for the app's loading. Returns -1 while it goes on, otherwise the response.
+
+function bridge_load_poll()
+{
+	var res, message, result;
+	if (popup = popup_loading || ds_priority_size(load_queue) > 0)
+		return -1
+
+	res = (bridge_pending_response >= 0 ? bridge_pending_response : bridge_cmd_get_status(-1))
+	bridge_pending_response = -1
+
+	// What the app would have said in a message box during the loading
+	message = bridge_quiet_end()
+	if (message != "")
+	{
+		result = res[?"result"]
+		result[?"warning"] = message
+	}
+
 	return res
 }

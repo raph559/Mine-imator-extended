@@ -80,7 +80,8 @@ function bridge_cmd_project_open(args)
 		return bridge_error("load_failed", "Mine-imator could not load " + fn)
 	}
 
-	return bridge_cmd_get_status(args)
+	// The status once the project's sounds and scenery are loaded
+	return bridge_after_loading(-1)
 }
 
 /// bridge_cmd_project_save(args)

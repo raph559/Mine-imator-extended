@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { after, before, test } from "node:test";
-import { newProject, startApp } from "./harness.mjs";
+import { countPixels, decodePng, newProject, startApp, tmpDir } from "./harness.mjs";
 
 let app, call, cube, ball;
 before(async () => {
@@ -68,4 +69,28 @@ test("undo with steps undoes a whole batch, and stops when there is nothing left
   assert.ok(all.steps < 500);
   assert.deepEqual(await call("undo"), { done: false, steps: 0 });
   await assert.rejects(call("undo", { steps: 0 }), (err) => err.code === "bad_args");
+});
+
+// The batch moves the timeline marker to each keyframe and back; the scene has to follow it back
+let box;
+test("after set_keyframes, get_object reports the values at the timeline marker", async () => {
+  box = await call("create_object", { type: "cube" });
+  await call("set_frame", { frame: 0 });
+  await call("set_keyframes", {
+    keyframes: [
+      { id: box.id, frame: 0, values: { pos_x: 0, rgb_mul: "#FF0000" } },
+      { id: box.id, frame: 24, values: { pos_x: 10000, rgb_mul: "#FF0000" } },
+    ],
+  });
+  assert.equal((await call("get_status")).frame, 0);
+  assert.equal((await call("get_object", { id: box.id })).values.pos_x, 0);
+});
+
+test("after set_keyframes, the view shows the scene at the timeline marker", async () => {
+  await call("set_work_camera", { focus: [0, 0, 8], angle_xy: 45, angle_z: 20, zoom: 150 });
+  await call("select", { ids: [] });
+  const path = `${tmpDir()}/marker.png`;
+  await call("screenshot", { path, overwrite: true });
+  const red = countPixels(decodePng(readFileSync(path)), (r, g, b) => r > 100 && g < 60 && b < 60);
+  assert.ok(red > 0, "the red cube is in view at frame 0, and far away at the last frame keyed");
 });

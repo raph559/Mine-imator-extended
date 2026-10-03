@@ -193,6 +193,15 @@ function bridge_cmd_set_keyframes(args)
 
 	timeline_marker = prevmarker
 
+	// Each timeline was left evaluated at the last frame keyed on it, and the app only
+	// re-evaluates when the marker moves: put the scene back at the marker here
+	with (obj_timeline)
+	{
+		tl_update_values()
+		update_matrix = true
+	}
+	tl_update_matrix()
+
 	result = ds_map_create()
 	result[?"keyframes"] = ds_list_size(list)
 	result[?"undo_steps"] = ds_list_size(list)

@@ -75,7 +75,7 @@ and a question before commit and merge.
    duplicate types. Common options first (sprite or template, amount, speed,
    direction, gravity, colour, size, lifetime), then the random-range variants.
    About 114 actions and 140 options in total.
-4. **Official app compatibility.** Open a project saved by the custom build in
+4. **Official app compatibility (offline part done).** Open a project saved by the custom build in
    the official app. The official app has no hidden mode, so this needs the
    person (or a quiet moment). Offline part first: compare a saved project's
    header and structure with one saved by the official app.
@@ -94,3 +94,12 @@ does not reach them: `action_lib_item_tex_material` and `action_lib_item_tex_nor
 record `action_lib_item_tex`, `action_lib_pc_spawn_region_path` records
 `action_lib_pc_type_temp`, and `action_project_render_bend_style` records
 `action_project_bend_style`. Undoing those would run the wrong action.
+
+Item 4, what is known: a project saved by the custom build (Front flip) has the
+same format number (34), the same created_in (2.0.2) and the same top-level and
+nested section keys (project, render, background) as one saved by the official
+app. The project save and load scripts are unchanged from upstream, so both
+builds write the same format. The official project available for comparison was
+empty, so timeline and template entries could not be compared field by field.
+Not yet done: opening a custom-build project in the official app, which needs a
+visible window (the official app has no hidden mode).

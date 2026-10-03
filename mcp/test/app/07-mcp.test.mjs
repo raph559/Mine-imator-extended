@@ -24,7 +24,7 @@ test("lists every tool", async () => {
   const names = (await mcp.listTools()).tools.map((t) => t.name);
   for (const name of ["launch_app", "get_status", "create_object", "set_values", "set_keyframes", "screenshot", "export_image", "export_movie"])
     assert.ok(names.includes(name), name);
-  assert.equal(names.length, 43);
+  assert.equal(names.length, 44);
 });
 
 test("launch_app reports the running app without starting another", async () => {

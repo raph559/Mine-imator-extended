@@ -62,7 +62,7 @@ and a question before commit and merge.
    cursor. Menus and popups do not count. After a minute it answers `busy`.
    Tested through a test-only command, enabled by an environment variable, that
    sets the drag state.
-2. **`import_world`.** A box of blocks from a Minecraft world folder
+2. **`import_world` (done).** A box of blocks from a Minecraft world folder
    (`world_folder`, `dimension`, `from`, `to`, optional block filter), built
    like `import_scenery`. No world exists on this machine, so the test writes a
    tiny region file in the 1.18+ format. Risk: the importer may be stricter than

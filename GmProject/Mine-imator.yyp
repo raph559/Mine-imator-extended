@@ -1329,6 +1329,7 @@
     {"id":{"name":"app_event_draw","path":"scripts/app_event_draw/app_event_draw.yy",},"order":31,},
     {"id":{"name":"app_event_game_end","path":"scripts/app_event_game_end/app_event_game_end.yy",},"order":33,},
     {"id":{"name":"app_event_http","path":"scripts/app_event_http/app_event_http.yy",},"order":35,},
+    {"id":{"name":"bridge_world","path":"scripts/bridge_world/bridge_world.yy",},"order":35,},
     {"id":{"name":"bridge_guard","path":"scripts/bridge_guard/bridge_guard.yy",},"order":35,},
     {"id":{"name":"bridge_media","path":"scripts/bridge_media/bridge_media.yy",},"order":35,},
     {"id":{"name":"bridge_assets","path":"scripts/bridge_assets/bridge_assets.yy",},"order":35,},

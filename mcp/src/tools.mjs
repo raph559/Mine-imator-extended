@@ -432,6 +432,22 @@ export const tools = [
     timeoutMs: 600000,
   },
   {
+    name: "import_world",
+    cmd: "import_world",
+    description: "Add a box of blocks from a Minecraft world (a save folder from .minecraft/saves) to the scene as a scenery object, and wait until the app has built it. from and to are Minecraft block coordinates [x, y, z] with y up, as the F3 screen shows them: from is included, to is not, and each side can be at most 1024 blocks. only_blocks keeps just those blocks, exclude_blocks leaves them out (names from list_names kind block). Returns the new object and its size. Refuses worlds without region files and boxes without blocks, and then adds nothing. Two undo steps.",
+    shape: {
+      world_folder: z.string().min(1).describe("Full path of the world folder (the one with level.dat), or of a region folder"),
+      dimension: z.enum(["overworld", "nether", "end"]).optional().describe("Default overworld"),
+      from: z.array(z.number().int()).length(3).describe("One corner of the box, included"),
+      to: z.array(z.number().int()).length(3).describe("The opposite corner, not included. Above from on every axis"),
+      name: z.string().optional().describe("Name shown in the timeline"),
+      only_blocks: z.array(z.string()).optional().describe("Keep only these blocks"),
+      exclude_blocks: z.array(z.string()).optional().describe("Leave these blocks out"),
+    },
+    paths: ["world_folder"],
+    timeoutMs: 600000,
+  },
+  {
     name: "import_image",
     cmd: "import_image",
     description: "Add a PNG or JPEG image to the project as a texture resource. Returns the resource (id, type, name, file, used). Put it on a shape with set_object_settings texture.",

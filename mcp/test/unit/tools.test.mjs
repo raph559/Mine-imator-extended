@@ -20,7 +20,7 @@ test("every bridge command has a tool", () => {
     "set_frame", "set_values", "set_keyframes", "remove_keyframes", "move_keyframes",
     "set_work_camera", "play", "stop", "screenshot", "export_image", "export_movie", "set_background", "get_project_settings", "set_project_settings",
     "duplicate_object", "copy_keyframes", "set_view_camera", "set_marker", "remove_marker", "set_loop",
-    "set_skin", "import_model", "import_scenery", "import_image", "list_resources", "remove_resource", "import_sound"];
+    "set_skin", "import_model", "import_scenery", "import_image", "list_resources", "remove_resource", "import_sound", "import_world"];
   assert.deepEqual(tools.map((t) => t.cmd).sort(), commands.sort());
 });
 
@@ -71,6 +71,11 @@ test("input shapes reject bad input and accept good input", () => {
   const loop = z.object(tool("set_loop").shape);
   assert.ok(loop.safeParse({ start: 0, end: 24, repeat: "seamless" }).success);
   assert.ok(!loop.safeParse({ repeat: "always" }).success);
+  const world = z.object(tool("import_world").shape);
+  assert.ok(world.safeParse({ world_folder: "C:/w", from: [0, 0, 0], to: [16, 16, 16], dimension: "nether", exclude_blocks: ["stone"] }).success);
+  assert.ok(!world.safeParse({ world_folder: "C:/w", from: [0, 0], to: [16, 16, 16] }).success);
+  assert.ok(!world.safeParse({ world_folder: "C:/w", from: [0, 0, 0.5], to: [16, 16, 16] }).success);
+  assert.ok(!world.safeParse({ world_folder: "C:/w", from: [0, 0, 0], to: [1, 1, 1], dimension: "sky" }).success);
   const skin = z.object(tool("set_skin").shape);
   assert.ok(skin.safeParse({ id: "a", player: "Notch_2" }).success);
   assert.ok(!skin.safeParse({ id: "a", player: "not a name" }).success);

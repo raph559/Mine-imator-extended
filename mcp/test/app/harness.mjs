@@ -3,7 +3,7 @@ import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync }
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { crc32, deflateSync } from "node:zlib";
+import { crc32, deflateSync, inflateSync } from "node:zlib";
 import { BridgeClient } from "../../src/bridge-client.mjs";
 
 export const TEST_PORT = 41235;
@@ -38,6 +38,56 @@ export function png(width, height, [r, g, b, a] = [200, 120, 40, 255]) {
   header.writeUInt32BE(height, 4);
   header.set([8, 6, 0, 0, 0], 8);
   return Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk("IHDR", header), chunk("IDAT", deflateSync(raw)), chunk("IEND", Buffer.alloc(0))]);
+}
+
+/** Decodes an 8-bit RGB or RGBA PNG (not interlaced) into { width, height, channels, data }. */
+export function decodePng(buf) {
+  let pos = 8;
+  let width = 0, height = 0, channels = 0;
+  const idat = [];
+  while (pos < buf.length) {
+    const length = buf.readUInt32BE(pos);
+    const type = buf.toString("ascii", pos + 4, pos + 8);
+    const body = buf.subarray(pos + 8, pos + 8 + length);
+    if (type === "IHDR") {
+      width = body.readUInt32BE(0);
+      height = body.readUInt32BE(4);
+      if (body[8] !== 8 || body[12] !== 0) throw new Error("only 8-bit, not interlaced PNGs");
+      channels = { 2: 3, 6: 4 }[body[9]];
+      if (!channels) throw new Error("only RGB and RGBA PNGs");
+    } else if (type === "IDAT") idat.push(body);
+    pos += 12 + length;
+  }
+  const raw = inflateSync(Buffer.concat(idat));
+  const stride = width * channels;
+  const data = Buffer.alloc(height * stride);
+  for (let y = 0; y < height; y++) {
+    const filter = raw[y * (stride + 1)];
+    for (let i = 0; i < stride; i++) {
+      const x = raw[y * (stride + 1) + 1 + i];
+      const left = i >= channels ? data[y * stride + i - channels] : 0;
+      const up = y > 0 ? data[(y - 1) * stride + i] : 0;
+      const upLeft = y > 0 && i >= channels ? data[(y - 1) * stride + i - channels] : 0;
+      let predicted = 0;
+      if (filter === 1) predicted = left;
+      else if (filter === 2) predicted = up;
+      else if (filter === 3) predicted = (left + up) >> 1;
+      else if (filter === 4) {
+        const p = left + up - upLeft;
+        const pa = Math.abs(p - left), pb = Math.abs(p - up), pc = Math.abs(p - upLeft);
+        predicted = pa <= pb && pa <= pc ? left : pb <= pc ? up : upLeft;
+      }
+      data[y * stride + i] = (x + predicted) & 255;
+    }
+  }
+  return { width, height, channels, data };
+}
+
+/** How many pixels of a decoded PNG satisfy test(r, g, b). */
+export function countPixels(image, test) {
+  let n = 0;
+  for (let i = 0; i < image.data.length; i += image.channels) if (test(image.data[i], image.data[i + 1], image.data[i + 2])) n++;
+  return n;
 }
 
 /** A fresh folder for a test project, with forward slashes as the bridge expects. */

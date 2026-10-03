@@ -11,6 +11,9 @@ function bridge_startup()
 	bridge_quiet_message = ""
 
 	bridge_pending_kind = ""
+	bridge_pending_world = false
+	bridge_world_mode_saved = false
+	bridge_world_prev_mode = 0
 	bridge_skin_sources = ds_map_create()
 
 	// Only the tests turn this on: lets them pretend that the person is dragging
@@ -219,7 +222,10 @@ function bridge_loaded_find(obj)
 function bridge_undo_last_load(script)
 {
 	if (history_pos = 0 && history_amount > 0 && history[0].script = script)
+	{
 		action_toolbar_undo()
+		history_pop() // A load that failed cannot be redone
+	}
 }
 
 /// bridge_name_new(tl, args)
@@ -331,17 +337,24 @@ function bridge_skin_resource(fn, modelfile)
 
 /// bridge_reset(everything)
 /// @arg everything
-/// @desc Puts the bridge back to idle after a command or a wait failed with an app error.
-/// Without it, errors would stay silenced and the next command would find a stale wait.
+/// @desc Puts the bridge back after a command or a wait went wrong. 0: only the silencing of the command that
+/// failed. 1: everything, after an app error in a wait. 2: a wait timed out, nobody waits for it any more but
+/// the app may still be loading, so what it raises stays silenced until the deadline.
 
 function bridge_reset(everything)
 {
 	bridge_quiet = false
-	if (everything > 0)
+	if (everything = 1)
 	{
 		bridge_quiet_until = 0
 		bridge_quiet_message = ""
+	}
+
+	// 1 and 2: nobody waits for the command any more (2: the work may still go on)
+	if (everything > 0)
+	{
 		bridge_pending_kind = ""
+		bridge_world_restore_mode()
 	}
 }
 
@@ -526,6 +539,7 @@ function bridge_cmd_import_scenery(args)
 	bridge_name_new(tl, args)
 
 	bridge_pending_kind = "scenery"
+	bridge_pending_world = false
 	bridge_pending_tl = tl
 	bridge_pending_res = res
 	bridge_pending_file = filename_name(fn)
@@ -537,12 +551,26 @@ function bridge_cmd_import_scenery(args)
 	return err
 }
 
+/// bridge_scenery_has_geometry(resource)
+/// @arg resource
+/// @desc Whether a built scenery has any blocks to show. A box of a world that is all air or was never generated builds nothing.
+
+function bridge_scenery_has_geometry(res)
+{
+	for (var d = 0; d < e_block_depth.amount; d++)
+		for (var vb = 0; vb < e_block_vbuffer.amount; vb++)
+			if (!vbuffer_is_empty(res.block_vbuffer[d, vb]))
+				return true
+
+	return false
+}
+
 /// bridge_scenery_poll()
 /// @desc Finishes import_scenery. Returns -1 while the scenery is being built, otherwise the response.
 
 function bridge_scenery_poll()
 {
-	var res, failed, message, result, size;
+	var res, failed, emptybox, message, result, size;
 	res = bridge_pending_res
 	failed = !instance_exists(res) || !instance_exists(bridge_pending_tl)
 	if (!failed && !res.ready)
@@ -556,12 +584,25 @@ function bridge_scenery_poll()
 		failed = true
 
 	message = bridge_quiet_end()
+	bridge_world_restore_mode()
 
-	if (failed)
+	// A box of a world that holds no blocks builds nothing
+	emptybox = (!failed && bridge_pending_world && !bridge_scenery_has_geometry(res))
+
+	if (failed || emptybox)
 	{
 		bridge_undo_last_load(action_tl_name)
-		bridge_undo_last_load(action_lib_scenery_load)
-		return bridge_error("bad_args", "Could not load the scenery " + bridge_pending_file + (message != "" ? ": " + message : ""))
+		if (bridge_pending_world)
+		{
+			bridge_undo_last_load(action_res_scenery_animate)
+			bridge_undo_last_load(action_res_import_world)
+		}
+		else
+			bridge_undo_last_load(action_lib_scenery_load)
+
+		if (emptybox)
+			return bridge_error("not_found", "There are no blocks in that part of the world")
+		return bridge_error("bad_args", "Could not load " + (bridge_pending_world ? "the world box" : "the scenery " + bridge_pending_file) + (message != "" ? ": " + message : ""))
 	}
 
 	result = bridge_tl_summary(bridge_pending_tl)

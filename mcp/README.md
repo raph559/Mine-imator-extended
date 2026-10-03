@@ -19,7 +19,7 @@ A small dot on the MCP button shows that it is running. Toasts announce when it 
 
 ## Tools
 
-`launch_app`, `get_status`, `project_new`, `project_open`, `project_save`, `get_scene`, `get_object`, `create_object`, `remove_object`, `rename_object`, `set_parent`, `select_objects`, `set_object_settings`, `list_names`, `undo`, `redo`, `set_frame`, `set_values`, `set_keyframes`, `remove_keyframes`, `move_keyframe`, `set_work_camera`, `play`, `stop`, `screenshot`, `export_image`, `export_movie`, `set_background`, `get_project_settings`, `set_project_settings`, `duplicate_object`, `copy_keyframes`, `set_view_camera`, `set_marker`, `remove_marker`, `set_loop`, `set_skin`, `import_model`, `import_scenery`, `import_image`, `list_resources`, `remove_resource`, `import_sound`.
+`launch_app`, `get_status`, `project_new`, `project_open`, `project_save`, `get_scene`, `get_object`, `create_object`, `remove_object`, `rename_object`, `set_parent`, `select_objects`, `set_object_settings`, `list_names`, `undo`, `redo`, `set_frame`, `set_values`, `set_keyframes`, `remove_keyframes`, `move_keyframe`, `set_work_camera`, `play`, `stop`, `screenshot`, `export_image`, `export_movie`, `set_background`, `get_project_settings`, `set_project_settings`, `duplicate_object`, `copy_keyframes`, `set_view_camera`, `set_marker`, `remove_marker`, `set_loop`, `set_skin`, `import_model`, `import_scenery`, `import_image`, `list_resources`, `remove_resource`, `import_sound`, `import_world`.
 
 Every change goes through the app's own actions, so it shows up live and Ctrl+Z undoes it.
 
@@ -44,9 +44,9 @@ One JSON object per line: `{"id": 1, "cmd": "get_status", "args": {}}` returns `
 - Exported images carry the "Created with Mine-imator" watermark (no tool option yet).
 - `screenshot` includes the selection gizmos of the selected object; `export_image` does not.
 - Camera values and `sky_time` are rounded to 3 decimals.
+- `import_world` has been tested only with small worlds written by the tests (1.18 and later chunk format), not with a real save. Older formats are read by the same importer as the app's own world import.
 - The bridge never lets the app open a message box while a command runs: errors come back in the reply (or as a `warning` when the command still succeeded) and questions are answered no. So `project_open` also opens a project whose model files are missing, without a dialog.
 - `screenshot` and `export_image` attach the picture to the tool result only up to 3 MB; a bigger one stays at its path and the result says so.
-- Importing a box from a Minecraft world is not available.
 - A command that arrives while the person is dragging something with the mouse in the app (a gizmo, keyframes, a panel edge) waits until they let go, up to a minute (`MINEIMATOR_BRIDGE_DRAG_WAIT_MS` overrides), then answers `busy`. Menus and popups do not count. `get_status` always answers and reports `user_dragging`.
 - While an export is running only `get_status` is answered; other commands wait for it. An export that takes longer than 10 minutes (`MINEIMATOR_BRIDGE_PENDING_TIMEOUT_MS` overrides) is answered with `timeout` and keeps running.
 

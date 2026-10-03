@@ -129,15 +129,14 @@ otherwise just the path). It contains no Mine-imator logic.
 | Objects | `create_object` (character, item, block, text, shapes, camera, lights, folder, audio, particles), `remove_object`, `rename_object`, `set_parent`, `select_objects`, `duplicate_object`, `set_object_settings` (visibility, lock, pivot, text, item, block, texture, spawner options, render and inherit flags) |
 | Animation | `set_frame`, `set_values`, `set_keyframes` (batch), `remove_keyframes`, `move_keyframe`, `copy_keyframes` (a frame, a range, or a whole pose, between frames or objects), `set_marker`, `remove_marker`, `set_loop`, `play`, `stop` |
 | Camera and output | `set_work_camera`, `set_view_camera`, `screenshot`, `export_image`, `export_movie` |
-| Assets | `set_skin` (file or player name), `import_model`, `import_scenery`, `import_image`, `import_sound`, `remove_resource` |
+| Assets | `set_skin` (file or player name), `import_model`, `import_scenery`, `import_world` (a box of blocks from a Minecraft save, optionally filtered by block), `import_image`, `import_sound`, `remove_resource` |
 | History | `undo`, `redo` |
 
 Character body parts are separate child timelines, so posing an arm is
 `set_values` on that part's id; `get_scene` exposes the tree. Keyframe values
 that refer to a resource or object (`sound_obj`, `texture_obj`) take its id.
 
-Not exposed: importing a box from a Minecraft world, particle type editing
-(spawners come from presets), shaders and render passes beyond the presets,
+Not exposed: particle type editing (spawners come from presets), shaders and render passes beyond the presets,
 multi-window.
 
 ## Error handling

@@ -228,6 +228,7 @@ namespace CppProject
 				}
 				else if (waitingTimer.hasExpired(waitingTimeoutMs))
 				{
+					bridge_reset(scope, 2);
 					ReplyError(waitingRequest.socket, waitingRequest.id, "timeout", "The command did not finish in time. It may still be running in Mine-imator");
 					waiting = false;
 				}

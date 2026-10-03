@@ -35,3 +35,18 @@ function bridge_start()
 function bridge_stop()
 {
 }
+
+/// CppSeparate IntType bridge_map_item_type(IntType, StringType)
+/// @desc The data structure type of a value in a decoded JSON object: ds_type_list or ds_type_map for an
+/// array or object, 0 for a plain value. A ds id and a number cannot be told apart in GML, this can.
+function bridge_map_item_type(map, key)
+{
+	return 0
+}
+
+/// CppSeparate IntType bridge_list_item_type(IntType, IntType)
+/// @desc Same for an item of a decoded JSON array.
+function bridge_list_item_type(list, pos)
+{
+	return 0
+}

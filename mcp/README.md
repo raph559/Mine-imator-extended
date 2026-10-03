@@ -19,7 +19,7 @@ A small dot on the MCP button shows that it is running. Toasts announce when it 
 
 ## Tools
 
-`launch_app`, `get_status`, `project_new`, `project_open`, `project_save`, `get_scene`, `get_object`, `create_object`, `remove_object`, `rename_object`, `set_parent`, `select_objects`, `set_object_settings`, `list_names`, `undo`, `redo`, `set_frame`, `set_values`, `set_keyframes`, `remove_keyframes`, `move_keyframe`, `set_work_camera`, `play`, `stop`, `screenshot`, `export_image`, `export_movie`, `set_background`, `get_project_settings`, `set_project_settings`, `duplicate_object`, `copy_keyframes`, `set_view_camera`, `set_marker`, `remove_marker`, `set_loop`, `set_skin`, `import_model`, `import_scenery`, `import_image`, `list_resources`, `remove_resource`, `import_sound`, `import_world`.
+`launch_app`, `get_status`, `project_new`, `project_open`, `project_save`, `get_scene`, `get_object`, `create_object`, `remove_object`, `rename_object`, `set_parent`, `select_objects`, `set_object_settings`, `list_names`, `undo`, `redo`, `set_frame`, `set_values`, `set_keyframes`, `remove_keyframes`, `move_keyframe`, `set_work_camera`, `play`, `stop`, `screenshot`, `export_image`, `export_movie`, `set_background`, `get_project_settings`, `set_project_settings`, `duplicate_object`, `copy_keyframes`, `set_view_camera`, `set_marker`, `remove_marker`, `set_loop`, `set_skin`, `import_model`, `import_scenery`, `import_image`, `list_resources`, `remove_resource`, `import_sound`, `import_world`, `add_particle_type`, `set_particle_type`, `remove_particle_type`, `duplicate_particle_type`.
 
 Every change goes through the app's own actions, so it shows up live and Ctrl+Z undoes it.
 
@@ -44,6 +44,8 @@ One JSON object per line: `{"id": 1, "cmd": "get_status", "args": {}}` returns `
 - Exported images carry the "Created with Mine-imator" watermark (no tool option yet).
 - `screenshot` includes the selection gizmos of the selected object; `export_image` does not.
 - Camera values and `sky_time` are rounded to 3 decimals.
+- Particle types can use the built-in sprites. A sprite sheet image, a library object or text as the particle is not available.
+- Random values in particle type settings are written as text `min..max`; reading gives the same text. Colours are `#RRGGBB` or `#RRGGBB..#RRGGBB`.
 - `import_world` has been tested only with small worlds written by the tests (1.18 and later chunk format), not with a real save. Older formats are read by the same importer as the app's own world import.
 - The bridge never lets the app open a message box while a command runs: errors come back in the reply (or as a `warning` when the command still succeeded) and questions are answered no. So `project_open` also opens a project whose model files are missing, without a dialog.
 - `screenshot` and `export_image` attach the picture to the tool result only up to 3 MB; a bigger one stays at its path and the result says so.
@@ -54,5 +56,6 @@ One JSON object per line: `{"id": 1, "cmd": "get_status", "args": {}}` returns `
 
 - New command: add `bridge_cmd_<name>` in a `GmProject/scripts/bridge_*` script (create one with `mcp/scripts/add-gml-script.ps1 <name>`), add a `case` in `bridge_dispatch_command` (`bridge_core.gml`), then a tool in `mcp/src/tools.mjs`. Rebuild with `mcp/scripts/build.ps1` (about a minute); the C++ is regenerated from the GML.
 - CppGen infers C++ types from every assignment and call site. A value that came from the request (`bridge_arg(...)` is a variant) must be converted before it reaches an app variable or app function: `string(x)` for text, `bridge_real(x)` or `round(x)` for numbers, `(x > 0)` for booleans. Otherwise the app's typed variable widens to a variant and unrelated stock files stop compiling (for example `C2666` in `AudioFunc.cpp`).
+- The particle type settings (`bridge_ptypes.gml`) are generated: edit `mcp/scripts/gen-particle-types.cjs`, run it with node, and add the setting to `particleTypeShape` in `mcp/src/tools.mjs`.
 - Booleans are plain numbers inside the app; reply with `(x > 0)` so JSON gets `true`/`false`.
 - Validate everything before changing anything. `error()` and `question()` are silenced while a command runs, but other stock scripts that open a dialog (`show_message*`, `file_dialog_*`) must still not be called, and a file that the app would load as an empty thing instead of failing (a PNG that is not a PNG) must be checked first. Anything that loads over several frames returns `pending: true` and finishes in `bridge_pending_poll`.

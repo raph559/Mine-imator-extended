@@ -13,6 +13,60 @@ export function normalizePath(p) {
   return p.replaceAll("\\", "/");
 }
 
+// The settings of a particle type. A random value is written "min..max".
+const range = z.union([z.number(), z.string().regex(/^-?\d+(\.\d+)?\.\.-?\d+(\.\d+)?$/)]);
+const range3 = z.array(z.union([range, z.null()])).length(3);
+const colorRange = z.string().regex(/^#[0-9a-fA-F]{6}(\.\.#[0-9a-fA-F]{6})?$/);
+const rangeNote = "A number, or min..max for a random value in that range.";
+const vectorNote = "[x, y, z], each a number, min..max, or null to leave that axis as it is.";
+const particleTypeShape = {
+  name: z.string().min(1).max(100),
+  spawn_rate: z.number().min(0).max(100).describe("Share of the spawner's particles that are of this type, in percent. The other types change to make room"),
+  sprite_template: z.string().describe("The sprite, from list_names kind particle_sprites"),
+  sprite_animation_onend: z.enum(["stop", "loop", "reverse"]).describe("What a particle's sprite animation does at its last frame"),
+  scale: range.describe("Size when it appears, 1 is normal. " + rangeNote),
+  scale_add: range.describe("Size change per second. " + rangeNote),
+  alpha: range.describe("Opacity from 0 to 1. " + rangeNote),
+  alpha_add: range.describe("Opacity change per second. " + rangeNote),
+  sprite_angle: range.describe("Rotation of the flat sprite in degrees. " + rangeNote),
+  sprite_angle_add: range.describe("Rotation change per second. " + rangeNote),
+  angle_speed: range.describe("Speed along the launch angle. " + rangeNote),
+  angle_speed_add: range.describe("Speed gained over time. " + rangeNote),
+  angle_speed_mul: range.describe("Factor the speed is multiplied by over time. " + rangeNote),
+  color_mix_time: range.describe("Seconds a particle takes to mix over to color_mix. " + rangeNote),
+  sprite_animation_speed: range.describe("Speed of the sprite animation. " + rangeNote),
+  angle: range3.describe("Launch angle in degrees. " + vectorNote + " With angle_extend off only x is used, for all axes"),
+  spd: range3.describe("Initial speed. " + vectorNote + " With spd_extend off only x is used, for all axes"),
+  spd_add: range3.describe("Speed gained over time. " + vectorNote),
+  spd_mul: range3.describe("Factor the speed is multiplied by over time. " + vectorNote),
+  rot: range3.describe("Initial rotation in degrees. " + vectorNote + " With rot_extend off only x is used, for all axes"),
+  rot_spd: range3.describe("Rotation speed in degrees per second. " + vectorNote + " With rot_spd_extend off only x is used, for all axes"),
+  rot_spd_add: range3.describe("Rotation speed gained over time. " + vectorNote),
+  rot_spd_mul: range3.describe("Factor the rotation speed is multiplied by over time. " + vectorNote),
+  color: colorRange.describe("Colour as #RRGGBB, or #RRGGBB..#RRGGBB for a random colour between two"),
+  color_mix: colorRange.describe("The colour particles mix over to, if color_mix_enabled. Same forms as color"),
+  spawn_region: z.boolean().describe("Appear inside the spawner's spawn region"),
+  bounding_box: z.boolean().describe("Stay inside the spawner's bounding box"),
+  bounce: z.boolean().describe("Bounce off the bounding box"),
+  orbit: z.boolean().describe("Orbit the attractor"),
+  color_mix_enabled: z.boolean().describe("Mix the colour gradually over to color_mix"),
+  sprite_template_still_frame: z.boolean(),
+  sprite_template_random_frame: z.boolean().describe("Start the sprite animation at a random frame"),
+  sprite_template_reverse: z.boolean().describe("Play the sprite animation backwards"),
+  angle_extend: z.boolean().describe("Separate x, y and z for angle"),
+  spd_extend: z.boolean().describe("Separate x, y and z for spd and its changes"),
+  rot_extend: z.boolean().describe("Separate x, y and z for rot"),
+  rot_spd_extend: z.boolean().describe("Separate x, y and z for rot_spd and its changes"),
+  bounce_factor: z.number().min(0).max(10).describe("How much speed a bounce keeps, 1 is all of it"),
+  sprite_frame_width: z.number().int().min(1).max(4096),
+  sprite_frame_height: z.number().int().min(1).max(4096),
+  sprite_frame_start: z.number().int().min(0).max(4096),
+  sprite_frame_end: z.number().int().min(0).max(4096),
+};
+export const particleTypeSettingNames = Object.keys(particleTypeShape);
+const particleTypeSettings = z.object(particleTypeShape).partial().strict().describe("Setting name to value");
+const particleType = z.string().min(1).describe("Id or name of the particle type, from get_object particle_types");
+
 export const tools = [
   {
     name: "get_status",
@@ -56,7 +110,7 @@ export const tools = [
   {
     name: "get_object",
     cmd: "get_object",
-    description: "Read one object: its settings, its values at the current frame and every keyframe with its values. Position, rotation and scale are always listed, other values only when they differ from the default.",
+    description: "Read one object: its settings, its values at the current frame and every keyframe with its values. A particle spawner also lists its particle_types. Position, rotation and scale are always listed, other values only when they differ from the default.",
     shape: { id },
   },
   {
@@ -145,8 +199,8 @@ export const tools = [
   {
     name: "list_names",
     cmd: "list_names",
-    description: "List the names Mine-imator accepts for items, blocks, character models or particle presets, for create_object and set_object_settings.",
-    shape: { kind: z.enum(["item", "block", "character", "particles"]) },
+    description: "List the names Mine-imator accepts for items, blocks, character models, particle presets (kind particles) or the sprites of a particle type (kind particle_sprites), for create_object and set_object_settings.",
+    shape: { kind: z.enum(["item", "block", "character", "particles", "particle_sprites"]) },
   },
   {
     name: "undo",
@@ -396,6 +450,30 @@ export const tools = [
       clear: z.boolean().optional().describe("Remove the region"),
       repeat: z.enum(["off", "repeat", "seamless"]).optional(),
     },
+  },
+  {
+    name: "add_particle_type",
+    cmd: "add_particle_type",
+    description: "Add a particle type to a particle spawner, optionally with settings. A spawner makes particles of its types: each type has its own sprite, launch angle and speed, rotation, size, opacity and colour (fixed or random in a range), and how it behaves (bouncing, orbiting). Settings use plain numbers, or min..max for a random value, and lists of three for x, y and z. Returns the new type with all its settings and undo_steps. Nothing is added if a setting is wrong.",
+    shape: { id, settings: particleTypeSettings.optional() },
+  },
+  {
+    name: "set_particle_type",
+    cmd: "set_particle_type",
+    description: "Change settings of one particle type of a particle spawner (get_object lists the types in particle_types with their current settings, written the same way). Only the given settings change and nothing is applied if one is wrong. Each changed setting is an undo step; the result gives the type afterwards and undo_steps. Spawner-wide settings (amount, region, lifetime) are in set_object_settings.",
+    shape: { id, type: particleType, settings: particleTypeSettings },
+  },
+  {
+    name: "remove_particle_type",
+    cmd: "remove_particle_type",
+    description: "Remove a particle type from a particle spawner. One undo step.",
+    shape: { id, type: particleType },
+  },
+  {
+    name: "duplicate_particle_type",
+    cmd: "duplicate_particle_type",
+    description: "Copy a particle type of a spawner, to change the copy. Returns the copy and undo_steps.",
+    shape: { id, type: particleType },
   },
   {
     name: "set_skin",

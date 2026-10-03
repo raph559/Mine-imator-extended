@@ -126,7 +126,7 @@ otherwise just the path). It contains no Mine-imator logic.
 |---|---|
 | App and project | `launch_app`, `get_status`, `project_new`, `project_open`, `project_save`, `get_project_settings`, `set_project_settings` (tempo, resolution, render options), `set_background` (sky, sun, moon, clouds, sky image, fog, wind, ground, colours, biome) |
 | Reading | `get_scene` (objects and markers), `get_object` (values, settings, keyframes), `list_names`, `list_resources` |
-| Objects | `create_object` (character, item, block, text, shapes, camera, lights, folder, audio, particles), `remove_object`, `rename_object`, `set_parent`, `select_objects`, `duplicate_object`, `set_object_settings` (visibility, lock, pivot, text, item, block, texture, spawner options, render and inherit flags) |
+| Objects | `create_object` (character, item, block, text, shapes, camera, lights, folder, audio, particles), `remove_object`, `rename_object`, `set_parent`, `select_objects`, `duplicate_object`, `set_object_settings` (visibility, lock, pivot, text, item, block, texture, spawner options, render and inherit flags), `add_particle_type`, `set_particle_type`, `remove_particle_type`, `duplicate_particle_type` (the types of a particle spawner and their 42 settings) |
 | Animation | `set_frame`, `set_values`, `set_keyframes` (batch), `remove_keyframes`, `move_keyframe`, `copy_keyframes` (a frame, a range, or a whole pose, between frames or objects), `set_marker`, `remove_marker`, `set_loop`, `play`, `stop` |
 | Camera and output | `set_work_camera`, `set_view_camera`, `screenshot`, `export_image`, `export_movie` |
 | Assets | `set_skin` (file or player name), `import_model`, `import_scenery`, `import_world` (a box of blocks from a Minecraft save, optionally filtered by block), `import_image`, `import_sound`, `remove_resource` |
@@ -136,7 +136,7 @@ Character body parts are separate child timelines, so posing an arm is
 `set_values` on that part's id; `get_scene` exposes the tree. Keyframe values
 that refer to a resource or object (`sound_obj`, `texture_obj`) take its id.
 
-Not exposed: particle type editing (spawners come from presets), shaders and render passes beyond the presets,
+Not exposed: what a particle type is made of beyond the built-in sprites (a sprite sheet image, a library object, text),  shaders and render passes beyond the presets,
 multi-window.
 
 ## Error handling

@@ -71,6 +71,21 @@ function bridge_particle_preset_names()
 	return bridge_ok(result)
 }
 
+/// bridge_particle_sprite_names()
+/// @desc The list_names response for the sprites a particle type can use.
+
+function bridge_particle_sprite_names()
+{
+	var names, result;
+	names = ds_list_create()
+	for (var i = 0; i < ds_list_size(particle_template_list); i++)
+		ds_list_add(names, particle_template_list[|i].name)
+
+	result = ds_map_create()
+	ds_map_add_list(result, "names", names)
+	return bridge_ok(result)
+}
+
 /// bridge_particle_settings_add(map, template)
 /// @arg map
 /// @arg template

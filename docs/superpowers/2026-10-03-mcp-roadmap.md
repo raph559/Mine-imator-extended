@@ -69,7 +69,7 @@ and a question before commit and merge.
    the fixture; trying a real world later is still worthwhile.
    Call sequence: `action_res_import_world`, then `action_res_scenery_animate`,
    set `setting_world_import_filter_mode` as well, wait for `res.ready`.
-3. **Particle types.** Table-driven (like the background settings): list a
+3. **Particle types (done, with the exceptions below).** Table-driven (like the background settings): list a
    spawner's types and their settings in `get_object`, `set_particle_type`
    for any option with all-or-nothing validation and undo, and add, remove and
    duplicate types. Common options first (sprite or template, amount, speed,
@@ -82,3 +82,15 @@ and a question before commit and merge.
 
 Dropped: undoing the loop region and repeat mode, which the app does not undo
 either. Optional: an `upgraded` field in `get_status`.
+
+Particle types are done for everything except what a type is made of: a sprite
+sheet image (needs a way to import a particle sheet resource), a library object
+or text as the particle. The built-in sprites work.
+
+Upstream bugs found in Mine-imator itself while doing this. Two are fixed in the
+fork (the sprite angle actions recorded the scale actions for undo, so undoing a
+sprite angle edit changed the scale). Four are not touched, because the bridge
+does not reach them: `action_lib_item_tex_material` and `action_lib_item_tex_normal`
+record `action_lib_item_tex`, `action_lib_pc_spawn_region_path` records
+`action_lib_pc_type_temp`, and `action_project_render_bend_style` records
+`action_project_bend_style`. Undoing those would run the wrong action.

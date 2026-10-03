@@ -104,6 +104,8 @@ function bridge_cmd_get_object(args)
 	result = bridge_tl_summary(tl)
 	ds_map_add_map(result, "values", bridge_values_map(tl, tl.value))
 	ds_map_add_map(result, "settings", bridge_settings_map(tl))
+	if (tl.type = e_tl_type.PARTICLE_SPAWNER && tl.temp != null)
+		ds_map_add_list(result, "particle_types", bridge_ptype_list(tl.temp))
 
 	keyframes = ds_list_create()
 	for (var k = 0; k < ds_list_size(tl.keyframe_list); k++)

@@ -390,8 +390,10 @@ function bridge_cmd_list_names(args)
 		source = bench_settings.char_list.list
 	else if (kind = "particles")
 		return bridge_particle_preset_names()
+	else if (kind = "particle_sprites")
+		return bridge_particle_sprite_names()
 	else
-		return bridge_error("bad_args", "kind must be item, block, character or particles")
+		return bridge_error("bad_args", "kind must be item, block, character, particles or particle_sprites")
 
 	names = ds_list_create()
 	for (var i = 0; i < ds_list_size(source); i++)

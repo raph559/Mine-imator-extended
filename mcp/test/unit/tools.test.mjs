@@ -20,7 +20,8 @@ test("every bridge command has a tool", () => {
     "set_frame", "set_values", "set_keyframes", "remove_keyframes", "move_keyframes",
     "set_work_camera", "play", "stop", "screenshot", "export_image", "export_movie", "set_background", "get_project_settings", "set_project_settings",
     "duplicate_object", "copy_keyframes", "set_view_camera", "set_marker", "remove_marker", "set_loop",
-    "set_skin", "import_model", "import_scenery", "import_image", "list_resources", "remove_resource", "import_sound", "import_world"];
+    "set_skin", "import_model", "import_scenery", "import_image", "list_resources", "remove_resource", "import_sound", "import_world",
+    "add_particle_type", "set_particle_type", "remove_particle_type", "duplicate_particle_type"];
   assert.deepEqual(tools.map((t) => t.cmd).sort(), commands.sort());
 });
 
@@ -76,6 +77,13 @@ test("input shapes reject bad input and accept good input", () => {
   assert.ok(!world.safeParse({ world_folder: "C:/w", from: [0, 0], to: [16, 16, 16] }).success);
   assert.ok(!world.safeParse({ world_folder: "C:/w", from: [0, 0, 0.5], to: [16, 16, 16] }).success);
   assert.ok(!world.safeParse({ world_folder: "C:/w", from: [0, 0, 0], to: [1, 1, 1], dimension: "sky" }).success);
+  const ptype = z.object(tool("set_particle_type").shape);
+  assert.ok(ptype.safeParse({ id: "a", type: "t", settings: { scale: "0.5..2", spd: [0, "-20..20", null], color: "#112233..#AABBCC", bounce: true } }).success);
+  assert.ok(!ptype.safeParse({ id: "a", type: "t", settings: { scale: "big" } }).success);
+  assert.ok(!ptype.safeParse({ id: "a", type: "t", settings: { spd: [1, 2] } }).success);
+  assert.ok(!ptype.safeParse({ id: "a", type: "t", settings: { colour: "#112233" } }).success);
+  assert.ok(!ptype.safeParse({ id: "a", type: "t", settings: { color: "red" } }).success);
+  assert.ok(z.object(tool("add_particle_type").shape).safeParse({ id: "a" }).success);
   const skin = z.object(tool("set_skin").shape);
   assert.ok(skin.safeParse({ id: "a", player: "Notch_2" }).success);
   assert.ok(!skin.safeParse({ id: "a", player: "not a name" }).success);
